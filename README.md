@@ -2,7 +2,7 @@
 
 <img src="build/icon.png" width="96" alt="">
 
-# Quaderno
+# IZY NOTEBOOK
 
 **Un blocco note con la carta del quaderno di scuola, i menu di Windows 3.1 e i collegamenti tra note di Tomboy.**
 Le note sono semplici file Markdown in una cartella tua.
