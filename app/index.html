@@ -1,0 +1,2213 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Quaderno</title>
+<style>
+:root{
+  --navy:#000080; --gray:#c0c0c0; --dgray:#808080;
+  --ui:"MS Sans Serif","Microsoft Sans Serif",Arial,Helvetica,sans-serif;
+  --mono:Consolas,"Lucida Console",Menlo,"DejaVu Sans Mono",monospace;
+  --ink:rgba(70,125,190,.40); --grid:rgba(120,120,120,.22); --dot:rgba(110,110,110,.55); --redline:#e2504c;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:#008080;font:bold 12px/1.25 var(--ui);color:#000;overflow:hidden;-webkit-user-select:none;user-select:none}
+button,input,select{font:inherit}
+input,textarea{-webkit-user-select:text;user-select:text}
+
+/* ---------- Cornice finestra Win 3.1 ---------- */
+#app{position:fixed;inset:0;border:1px solid #000;padding:3px;background:var(--gray)}
+#win{height:100%;display:flex;flex-direction:column;border:1px solid #000;background:#fff;min-width:0}
+#titlebar{display:flex;height:20px;flex:none;background:var(--navy);border-bottom:1px solid #000;-webkit-app-region:drag}
+#sysbox{width:20px;flex:none;border-right:1px solid #000;background:var(--gray);display:grid;place-items:center;-webkit-app-region:no-drag;cursor:default}
+#sysbox i,.dsys i{display:block;width:13px;height:4px;background:#fff;border:1px solid #000;box-shadow:1px 1px 0 var(--dgray)}
+#sysbox.open{background:var(--navy)}
+#title{flex:1;color:#fff;text-align:center;line-height:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px}
+.wbtn{width:20px;flex:none;border-left:1px solid #000;background:var(--gray);display:grid;place-items:center;-webkit-app-region:no-drag;
+  box-shadow:inset 1px 1px #fff,inset -1px -1px var(--dgray),inset -2px -2px var(--dgray)}
+.wbtn:active{box-shadow:inset 1px 1px var(--dgray)}
+.tri-d{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:4px solid #000}
+.tri-u{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:4px solid #000}
+
+/* ---------- Menu ---------- */
+#menubar{display:flex;flex:none;height:20px;border-bottom:1px solid #000;background:#fff;padding-left:2px}
+.mb{padding:0 7px;line-height:19px;cursor:default}
+.mb.open{background:var(--navy);color:#fff}
+.menu{position:fixed;z-index:5000;background:#fff;border:1px solid #000;box-shadow:2px 2px 0 rgba(0,0,0,.55);padding:2px 0;min-width:180px;cursor:default}
+.mi{position:relative;display:flex;padding:0 16px 0 20px;line-height:18px;white-space:nowrap}
+.mi .k{margin-left:auto;padding-left:30px}
+.mi.dis{color:var(--dgray)}
+.mi.hot{background:var(--navy);color:#fff}
+.mi.hot.dis{color:var(--gray)}
+.mi.chk::before{content:"\2713";position:absolute;left:6px}
+.msep{border-top:1px solid #000;margin:3px 1px}
+u.acc{text-decoration:underline}
+.mention{max-height:182px;overflow-y:auto;min-width:220px;max-width:420px}
+.mention .mi{padding:0 10px}
+.mention .mi span{overflow:hidden;text-overflow:ellipsis}
+.mention .mi.new{font-style:italic}
+.mention .mhead{padding:0 10px;line-height:18px;color:var(--dgray);border-bottom:1px solid #000;margin-bottom:2px;white-space:nowrap}
+
+/* ---------- Barra strumenti ---------- */
+#toolbar{display:flex;flex:none;flex-wrap:wrap;gap:4px;align-items:center;padding:3px 5px;background:var(--gray);border-bottom:1px solid #000}
+.btn{min-width:26px;height:23px;padding:0 7px;background:var(--gray);border:1px solid #000;border-radius:3px;cursor:default;color:#000;
+  box-shadow:inset 1px 1px #fff,inset 2px 2px #fff,inset -1px -1px var(--dgray),inset -2px -2px var(--dgray)}
+.btn:active:not(:disabled){box-shadow:inset 1px 1px var(--dgray);padding-top:2px;padding-left:9px;padding-right:5px}
+.btn:disabled{color:var(--dgray)}
+.btn.def{border-width:2px}
+.btn:focus-visible{outline:1px dotted #000;outline-offset:-5px}
+.tsep{width:1px;align-self:stretch;margin:1px 3px;background:var(--dgray);box-shadow:1px 0 #fff}
+.sw{width:15px;height:13px;border:1px solid #000;display:inline-block;vertical-align:middle}
+.btn .u{text-decoration:underline}
+.tlab{font-weight:bold;margin-left:2px}
+select.w31,input.w31{height:22px;border:1px solid #000;background:#fff;font-weight:normal;padding:0 3px;border-radius:0}
+.tchk{display:flex;align-items:center;gap:3px}
+
+/* ---------- Foglio di quaderno ---------- */
+#sheet{flex:1;overflow:auto;background:#a8a8a8;position:relative;min-height:0}
+#page{
+  --pitch:5mm;--lh:5mm;--fs:3.6mm;--rule-y:7mm;--marginx:20mm;
+  position:relative;max-width:210mm;min-height:100%;margin:0 auto;background-color:#fffef6;
+  padding:10mm 12mm 15mm 10mm;border-left:1px solid #000;border-right:1px solid #000;cursor:text;display:flex;flex-direction:column
+}
+#page.margin{padding-left:calc(var(--marginx) + 3mm)}
+#page.margin::before{content:"";position:absolute;top:0;bottom:0;left:var(--marginx);border-left:1.5px solid var(--redline);pointer-events:none}
+#page.grid{background-image:linear-gradient(to bottom,var(--grid) 1px,transparent 1px),linear-gradient(to right,var(--grid) 1px,transparent 1px);
+  background-size:var(--pitch) var(--pitch);background-position:0 0}
+#page.dots{background-image:radial-gradient(circle at 1px 1px,var(--dot) 0.6px,transparent 1.1px);background-size:var(--pitch) var(--pitch);background-position:0 0}
+#page.rule{background-image:linear-gradient(to bottom,transparent calc(var(--lh) - 1px),var(--ink) calc(var(--lh) - 1px));
+  background-size:100% var(--lh);background-position:0 var(--rule-y)}
+
+#editor{outline:none;font-family:var(--mono);font-weight:normal;font-size:var(--fs);line-height:var(--lh);color:#1b1b3a;
+  white-space:pre-wrap;overflow-wrap:anywhere;flex:1;min-height:var(--lh);-webkit-user-select:text;user-select:text;cursor:text}
+#editor::first-line{font-weight:bold;color:var(--navy)}
+#editor div{min-height:var(--lh)}
+#editor a.nl{color:#0000c8;text-decoration:underline;cursor:pointer}
+#editor a.nl.broken{color:#b00000;text-decoration-style:dashed}
+#editor u{text-decoration-thickness:1px;text-underline-offset:2px}
+#pagefoot{position:absolute;right:12mm;bottom:5mm;font:2.8mm/1 var(--mono);color:#8a8a8a;pointer-events:none;-webkit-user-select:none;user-select:none;white-space:nowrap}
+.grp{position:relative;border:1px solid #000;padding:12px 10px 8px;margin:6px 0 12px}
+.grpt{position:absolute;top:-8px;left:8px;background:#fff;padding:0 4px}
+.grp .chk{margin:3px 0}
+.pnote{font-weight:normal;margin:0 0 4px;line-height:1.4}
+::highlight(find){background-color:#000080;color:#fff}
+#editor img{display:inline-block;vertical-align:bottom;max-width:100%;height:auto;cursor:default;background:#fff}
+#editor img.sel{outline:2px dashed var(--navy);outline-offset:1px}
+#editor img:not([src]){min-width:40mm;min-height:var(--lh);border:1px dashed #b00;color:#b00;font:12px var(--ui)}
+.imgbar{position:fixed;z-index:4000;display:flex;gap:3px;padding:3px;background:var(--gray);border:1px solid #000;box-shadow:2px 2px 0 rgba(0,0,0,.5)}
+.imgbar .btn{height:21px;min-width:0;padding:0 7px}
+.mention .mnb,.row .cm{margin-left:auto;padding-left:14px;color:var(--dgray);font-weight:normal;white-space:nowrap}
+.mention .mi.hot .mnb,.row.sel .cm{color:#d0d0d0}
+.row .cm{flex:none;width:130px;padding-left:0;overflow:hidden;text-overflow:ellipsis}
+.libwrap{display:flex;gap:10px}
+.libwrap .left{width:190px;flex:none}
+.libwrap .right{flex:1;min-width:0}
+.libwrap .left .listbox{height:250px}
+.libwrap .left .c2{width:34px}
+.libwrap .right .listbox{height:232px}
+
+/* ---------- Barra di stato ---------- */
+#statusbar{display:flex;flex:none;gap:3px;padding:2px 3px;background:var(--gray);border-top:1px solid #000;font-weight:normal}
+.sp{border:1px solid;border-color:var(--dgray) #fff #fff var(--dgray);padding:0 6px;line-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#st-msg{flex:1}
+
+/* ---------- Finestre di dialogo ---------- */
+.dlg-ov{position:fixed;inset:0}
+.dlg{position:fixed;border:1px solid #000;padding:3px;background:var(--gray);max-width:calc(100vw - 10px)}
+.dinner{border:1px solid #000;background:#fff}
+.dt{display:flex;height:19px;background:var(--navy);border-bottom:1px solid #000;cursor:default}
+.dsys{width:20px;border-right:1px solid #000;background:var(--gray);display:grid;place-items:center}
+.dtt{flex:1;color:#fff;text-align:center;line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:20px}
+.dbody{padding:12px 14px}
+.dbtns{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;padding:2px 14px 12px}
+.dbtns .btn{min-width:78px;height:25px}
+.dbody.msg{display:flex;gap:14px;align-items:flex-start}
+.mtext{white-space:pre-line;padding-top:6px;line-height:1.4}
+.ico{flex:none;width:34px;height:34px;border:2px solid #000;border-radius:50%;display:grid;place-items:center;font:bold 20px/1 Georgia,serif;background:#fff}
+.ico-q{background:#fff;color:var(--navy)}
+.ico-i{color:var(--navy);font-style:italic}
+.ico-x{background:#d00000;color:#fff;font:bold 9px/1 var(--ui)}
+.ico-w{background:#ffff00;border-radius:4px}
+.lbl{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.lbl input{flex:1}
+.chk{display:flex;gap:6px;align-items:center;font-weight:normal}
+.listbox{border:1px solid #000;height:230px;overflow:auto;background:#fff;font-weight:normal;outline:none}
+.listbox:focus .row.sel{outline:1px dotted #fff;outline-offset:-2px}
+.row,.lhead{display:flex;padding:0 4px;line-height:18px;gap:8px}
+.row.sel{background:var(--navy);color:#fff}
+.c1{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c2{flex:none;width:118px;text-align:right}
+.lhead{font-weight:bold;border:1px solid #000;border-bottom:none;background:var(--gray)}
+.cnt{margin-top:6px;font-weight:normal}
+.help{font-weight:normal;line-height:1.45;max-height:60vh;overflow:auto}
+.help td{padding:1px 14px 1px 0;vertical-align:top}
+.help td:first-child{font-weight:bold;white-space:nowrap}
+.about{display:flex;gap:16px;align-items:center;font-weight:normal;line-height:1.5}
+.about b{font-size:14px}
+
+/* ---------- Barre di scorrimento Win 3.1 (Chromium/Electron) ---------- */
+::-webkit-scrollbar{width:17px;height:17px}
+::-webkit-scrollbar-track{background:#e3e3e3 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2' height='2'%3E%3Crect width='1' height='1' fill='%23b0b0b0'/%3E%3Crect x='1' y='1' width='1' height='1' fill='%23b0b0b0'/%3E%3C/svg%3E")}
+::-webkit-scrollbar-thumb{background:var(--gray);border:1px solid #000;box-shadow:inset 1px 1px #fff,inset -1px -1px var(--dgray),inset -2px -2px var(--dgray)}
+::-webkit-scrollbar-button:single-button{display:block;width:17px;height:17px;background-color:var(--gray);background-repeat:no-repeat;background-position:center;border:1px solid #000;box-shadow:inset 1px 1px #fff,inset -1px -1px var(--dgray)}
+::-webkit-scrollbar-button:single-button:vertical:decrement{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='4'%3E%3Cpath d='M3.5 0L7 4H0z'/%3E%3C/svg%3E")}
+::-webkit-scrollbar-button:single-button:vertical:increment{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='4'%3E%3Cpath d='M0 0h7L3.5 4z'/%3E%3C/svg%3E")}
+::-webkit-scrollbar-button:single-button:horizontal:decrement{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='7'%3E%3Cpath d='M0 3.5L4 0v7z'/%3E%3C/svg%3E")}
+::-webkit-scrollbar-button:single-button:horizontal:increment{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='7'%3E%3Cpath d='M0 0l4 3.5L0 7z'/%3E%3C/svg%3E")}
+::-webkit-scrollbar-corner{background:var(--gray)}
+
+/* ---------- Stampa ---------- */
+@media print{
+  @page{margin:0}
+  body,#app,#win{position:static;overflow:visible;background:#fff;border:0;padding:0;height:auto}
+  #titlebar,#menubar,#toolbar,#statusbar,.menu,.dlg,.dlg-ov{display:none!important}
+  #sheet{overflow:visible;background:#fff}
+  #page{display:block;max-width:none;border:0;min-height:297mm;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #editor{min-height:0}
+  #pagefoot{position:fixed;bottom:6mm;right:12mm}
+  body.print-blank #page{background:#fff!important}
+  body.print-blank #page::before{display:none}
+  body.print-nofoot #pagefoot{display:none}
+}
+</style>
+</head>
+<body>
+<div id="app"><div id="win">
+  <div id="titlebar">
+    <div id="sysbox" title="Menu di sistema"><i></i></div>
+    <div id="title">Quaderno</div>
+    <div class="wbtn" id="btn-min" title="Riduci a icona"><span class="tri-d"></span></div>
+    <div class="wbtn" id="btn-max" title="Ingrandisci"><span class="tri-u"></span></div>
+  </div>
+  <div id="menubar"></div>
+  <div id="toolbar"></div>
+  <div id="sheet"><div id="page"><div id="editor" contenteditable="true" spellcheck="false"></div><div id="pagefoot"></div></div></div>
+  <div id="statusbar">
+    <div class="sp" id="st-msg">Pronto</div>
+    <div class="sp" id="st-words"></div>
+    <div class="sp" id="st-count"></div>
+    <div class="sp" id="st-folder" style="max-width:260px;cursor:default"></div>
+    <div class="sp" id="st-saved"></div>
+  </div>
+</div></div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const editor = $('#editor'), page = $('#page'), sheet = $('#sheet'), menubar = $('#menubar');
+const isEl = !!(window.qapi && window.qapi.isElectron);
+const isMac = (window.qapi && qapi.platform === 'darwin') || /Mac|iPhone|iPad/.test(navigator.platform || '');
+const MOD = isMac ? '⌘' : 'Ctrl+';
+const LS_KEY = 'quaderno.v1';
+const APP_VER = '1.3';
+
+const PAPERS = {
+  q5:   {label:'Quadretti 5 mm', cls:'grid', lh:5,  fs:3.6},
+  q10:  {label:'Quadretti 1 cm', cls:'grid', lh:10, fs:5},
+  d5:   {label:'Puntini 5 mm',   cls:'dots', lh:5,  fs:3.6},
+  r10:  {label:'Righe 1 cm',     cls:'rule', lh:10, fs:5},
+  blank:{label:'Foglio bianco',  cls:'',     lh:5,  fs:3.6}
+};
+const PITCH = {q5:5, q10:10, d5:5, r10:10, blank:5};
+const HL = {
+  1:{name:'giallo', color:'rgba(255, 228, 0, 0.5)'},
+  2:{name:'verde',  color:'rgba(70, 225, 110, 0.45)'},
+  3:{name:'rosa',   color:'rgba(255, 80, 165, 0.38)'}
+};
+
+/* ================= utilità ================= */
+function h(tag, attrs, ...kids){
+  const e = document.createElement(tag);
+  if (attrs) for (const [k,v] of Object.entries(attrs)){
+    if (v == null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k === 'html') e.innerHTML = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of kids.flat()){ if (c == null || c === false) continue; e.append(c.nodeType ? c : document.createTextNode(String(c))); }
+  return e;
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const norm = s => (s || '').replace(/\s+/g, ' ').trim().toLocaleLowerCase('it');
+const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+const now = () => Date.now();
+const uid = () => 'n' + now().toString(36) + Math.random().toString(36).slice(2, 7);
+const fmtDate = ts => new Date(ts).toLocaleString('it-IT', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+const safeName = s => (s || 'nota').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '_').trim().slice(0, 80) || 'nota';
+
+/* ================= dati ================= */
+let db = {version:1, notes:[], settings:{paper:'q5', margin:true, autolink:true, lastId:null}};
+let cur = null, openedTitle = '', hist = [], hpos = -1, dirty = false, editTimer = null, lastSaved = null;
+
+const byId = id => db.notes.find(n => n.id === id) || null;
+function findByTitle(t, excludeId){
+  const k = norm(t); if (!k) return null;
+  return db.notes.find(n => n.id !== excludeId && norm(n.title) === k) || null;
+}
+const nbOf = file => file && file.includes('/') ? file.split('/')[0] : '';
+const nbName = nb => nb || 'Generale';
+let backendDirs = [];
+function notebooks(){
+  const set = new Set(['']);
+  (backend ? backendDirs : (db.settings.notebooks || [])).forEach(x => set.add(x));
+  db.notes.forEach(n => set.add(n.nb || ''));
+  return [...set].sort((a, b) => a === '' ? -1 : b === '' ? 1 : a.localeCompare(b, 'it'));
+}
+const activeNb = () => cur ? (cur.nb || '') : (db.settings.lastNb || '');
+/* numero progressivo della nota dentro il suo quaderno (salvato nel file come "numero") */
+function nextNum(nb, except){ return Math.max(0, ...db.notes.filter(n => n !== except && (n.nb || '') === nb).map(n => n.num || 0)) + 1; }
+function ensureNums(){
+  const groups = new Map();
+  for (const n of db.notes){ const k = n.nb || ''; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(n); }
+  for (const list of groups.values()){
+    let max = Math.max(0, ...list.map(n => n.num || 0));
+    list.filter(n => !n.num).sort((a, b) => (a.created || 0) - (b.created || 0) || a.title.localeCompare(b.title, 'it')).forEach(n => { n.num = ++max; });
+  }
+}
+const footText = n => n ? `${nbName(n.nb)} \u00b7 nota n. ${n.num || '-'}` : '';
+function createNote(title, html, nb = activeNb()){
+  const n = {id:uid(), title, nb, html: html || `<div>${esc(title)}</div><div><br></div>`, created:now(), modified:now(), _w:true};
+  n.num = nextNum(nb, n);
+  if (backend) n.file = fileNameFor(n);
+  db.notes.push(n); return n;
+}
+function uniqueTitle(base){
+  if (!findByTitle(base)) return base;
+  let i = 2; while (findByTitle(base + ' ' + i)) i++;
+  return base + ' ' + i;
+}
+
+/* ================= impostazioni ================= */
+const SKEY = 'quaderno.settings';
+function loadSettings(){
+  let s = null;
+  try { s = isEl ? qapi.settingsLoad() : localStorage.getItem(SKEY); } catch(e){}
+  if (!s){   // impostazioni della versione 1 (stavano insieme alle note)
+    try { const old = isEl ? qapi.legacyLoad() : localStorage.getItem(LS_KEY); const d = old && JSON.parse(old); if (d && d.settings) s = JSON.stringify(d.settings); } catch(e){}
+  }
+  if (s){ try { Object.assign(db.settings, JSON.parse(s)); } catch(e){} }
+}
+function saveSettings(){
+  try { const s = JSON.stringify(db.settings); if (isEl) qapi.settingsSave(s); else localStorage.setItem(SKEY, s); } catch(e){}
+}
+
+/* ================= archivio =================
+   backend = null  -> memoria del browser (localStorage, un unico blocco)
+   backend = {...} -> cartella di lavoro: un file Markdown (.md) per nota      */
+let backend = null, flushTimer = null, writing = false, writePending = false, scanning = false;
+const exportable = n => ({id:n.id, title:n.title, nb:n.nb || '', num:n.num || null, html:n.html, created:n.created, modified:n.modified});
+async function call(fn){ try { const r = await fn(); return r || {}; } catch(e){ return {error: e && e.message || String(e)}; } }
+
+function loadLocal(){
+  db.notes = [];
+  try {
+    const d = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+    if (d && Array.isArray(d.notes)) db.notes = d.notes.filter(n => n && typeof n.html === 'string').map(n => Object.assign(exportable(n), {_w:false}));
+  } catch(e){}
+  if (!db.notes.length) seed();
+  ensureNums();
+}
+function persistLocal(){
+  try { localStorage.setItem(LS_KEY, JSON.stringify({version:2, notes:db.notes.map(exportable)})); db.notes.forEach(n => n._w = false); lastSaved = new Date(); }
+  catch(e){ status('Errore di salvataggio: ' + e.message); }
+  updateStatus();
+}
+function persist(){
+  if (!backend) return persistLocal();
+  clearTimeout(flushTimer); flushTimer = setTimeout(() => { flushTimer = null; flushWrites(); }, 60);
+}
+async function flushWrites(){
+  if (!backend) return persistLocal();
+  if (writing){ writePending = true; return; }
+  writing = true;
+  try { for (const n of db.notes.filter(x => x._w)) await writeNote(n); }
+  finally { writing = false; }
+  if (writePending){ writePending = false; return flushWrites(); }
+  updateStatus();
+}
+async function writeNote(n){
+  const b = backend; if (!b) return;
+  n._w = false;
+  if (!n.file) n.file = fileNameFor(n);
+  if (n._renameFrom && n._renameFrom !== n.file){
+    const from = n._renameFrom; n._renameFrom = null;
+    const r = await call(() => b.rename(from, n.file));
+    if (r.error){ status('Impossibile rinominare il file: ' + r.error); n.file = from; }
+    else if (r.same) n.file = from;
+    else if (r.mtime != null) n.mtime = r.mtime;
+  }
+  const text = serializeNote(n);
+  let r = await call(() => b.write(n.file, text, n.mtime == null ? null : n.mtime));
+  if (r.conflict){
+    // data cambiata ma contenuto identico (es. OneDrive che "tocca" il file): nessun vero conflitto
+    const rd = await call(() => b.read(n.file));
+    if (!rd.error && rd.text === n._text) r = await call(() => b.write(n.file, text, rd.mtime));
+  }
+  if (r.conflict){ n._w = true; return conflict(n, r.mtime); }
+  if (r.error){ n._w = true; status('Errore di salvataggio: ' + r.error); return; }
+  n.mtime = r.mtime; n._text = text; lastSaved = new Date();
+}
+async function conflict(n, diskMtime){
+  if (n._conflict) return;
+  n._conflict = true;
+  const res = await msgBox('Nota modificata altrove',
+    `La nota "${n.title}" è stata modificata fuori da Quaderno\n(da un altro PC o da un altro programma).\n\nQuale versione vuoi tenere?`,
+    {icon:'w', buttons:['Tieni la mia', 'Carica quella su disco']});
+  n._conflict = false;
+  if (res === 'Carica quella su disco'){ n._w = false; if (n === cur){ clearTimeout(editTimer); editTimer = null; dirty = false; } await reloadFromDisk(n); }
+  else { n.mtime = diskMtime; n._w = true; persist(); }
+}
+function safeNb(t){ const s = (t || '').trim(); return s ? safeFile(s).replace(/^[_]+/, '').replace(/^allegati$/i, 'allegati_') : ''; }
+function safeFile(t){
+  let s = (t || 'nota').replace(/[\\/:*?"<>|\u0000-\u001f#^\[\]]+/g, '-').replace(/^[\s.]+|[\s.]+$/g, '').slice(0, 100);
+  if (!s) s = 'nota';
+  if (/^(con|prn|aux|nul|com\d|lpt\d)$/i.test(s)) s += '_';
+  return s;
+}
+function fileNameFor(n){
+  const pre = n.nb ? n.nb + '/' : '';
+  const base = pre + safeFile(n.title); let name = base + '.md', i = 2;
+  const taken = nm => db.notes.some(x => x !== n && x.file && x.file.toLowerCase() === nm.toLowerCase());
+  while (taken(name)) name = `${base} (${i++}).md`;
+  return name;
+}
+function hashId(s){ let h = 2166136261; for (const c of s.toLowerCase()) h = Math.imul(h ^ c.codePointAt(0), 16777619); return 'f' + (h >>> 0).toString(36); }
+function noteFromFile(f){
+  const p = mdToNote(f.text, f.name);
+  return {id: p.id || hashId(f.name), title:p.title, nb:nbOf(f.name), num:p.num, html:p.html, created: p.created || f.mtime, modified: p.modified || f.mtime,
+          file:f.name, mtime:f.mtime, fmExtra:p.fmExtra, _text:f.text, _w:false};
+}
+async function reloadFromDisk(n){
+  const rd = await call(() => backend.read(n.file)); if (rd.error) return;
+  const p = mdToNote(rd.text, n.file);
+  Object.assign(n, {title:p.title, html:p.html, modified:p.modified || rd.mtime, mtime:rd.mtime, fmExtra:p.fmExtra, _text:rd.text, num:p.num || n.num});
+  if (n === cur){
+    const st = sheet.scrollTop;
+    editor.innerHTML = sanitize(n.html) || '<div><br></div>';
+    n.html = cleanHTML(); openedTitle = n.title;
+    markBroken(); updateChrome(); resolveImages(); sheet.scrollTop = st;
+    status(`"${n.title}" aggiornata con la versione su disco.`);
+  }
+}
+/* apre una cartella: legge tutte le note .md e la rende l'archivio attivo */
+async function useFolder(b, {copyFrom = null} = {}){
+  const r = await call(() => b.loadAll());
+  if (r.error){ await msgBox('Cartella di lavoro', 'Impossibile leggere la cartella:\n' + r.error, {icon:'x'}); return false; }
+  const notes = [], ids = new Set();
+  for (const f of r.files){ const n = noteFromFile(f); if (ids.has(n.id)) n.id = uid(); ids.add(n.id); notes.push(n); }
+  let src = null, legacy = false;
+  if (!notes.length){
+    if (copyFrom && copyFrom.length){
+      const a = await msgBox('Cartella di lavoro', `La cartella "${b.label}" è vuota.\nVuoi copiarci le ${copyFrom.length} note attuali?`, {icon:'q', buttons:['Sì','No']});
+      if (a === 'Sì') src = copyFrom;
+    } else if (isEl){
+      try { const old = qapi.legacyLoad(); const d = old && JSON.parse(old); if (d && Array.isArray(d.notes) && d.notes.length){ src = d.notes; legacy = true; } } catch(e){}
+    }
+  }
+  if (cur) commit();
+  backend = b; backendDirs = r.dirs || []; db.notes = notes; cur = null; hist = []; hpos = -1;
+  if (src) for (const s of src){
+    if (!s || typeof s.html !== 'string') continue;
+    const n = {id: ids.has(s.id) || !s.id ? uid() : s.id, title: String(s.title || 'Senza titolo'), nb: safeNb(s.nb), num: +s.num || null, html: sanitize(s.html),
+               created: +s.created || now(), modified: +s.modified || now(), _w:true};
+    n.file = fileNameFor(n); db.notes.push(n);
+  }
+  if (!db.notes.length) seed();
+  ensureNums();
+  await flushWrites();
+  if (legacy){ qapi.legacyDone(); status(`Le note della versione precedente sono state spostate nella cartella di lavoro.`); }
+  const start = db.settings.lastId && byId(db.settings.lastId) || [...db.notes].sort((x, y) => y.modified - x.modified)[0];
+  openNote(start.id);
+  updateFolderPanel();
+  if (!legacy) status(`Cartella di lavoro: ${b.label} — ${db.notes.length} note.`);
+  return true;
+}
+/* controlla la cartella: note nuove, modificate o cancellate da fuori */
+async function rescan(){
+  if (!backend || scanning || writing || flushTimer || modalCount > 0) return;
+  scanning = true;
+  try {
+    const b = backend;
+    const r = await call(() => b.list());
+    if (b !== backend) return;
+    if (r.error){ status('Cartella di lavoro non raggiungibile: ' + r.error); return; }
+    const names = new Map(r.files.map(f => [f.name.toLowerCase(), f]));
+    let changed = false;
+    if (JSON.stringify(r.dirs || []) !== JSON.stringify(backendDirs)){ backendDirs = r.dirs || []; changed = true; }
+    for (const f of r.files){
+      const n = db.notes.find(x => x.file && x.file.toLowerCase() === f.name.toLowerCase());
+      if (!n){
+        const rd = await call(() => b.read(f.name)); if (rd.error) continue;
+        const nn = noteFromFile({name:f.name, text:rd.text, mtime:rd.mtime});
+        const same = byId(nn.id);
+        if (same && same.file && !names.has(same.file.toLowerCase()) && !same._w){   // stessa nota, spostata da fuori
+          Object.assign(same, {file:nn.file, nb:nn.nb, title:nn.title, html:nn.html, mtime:nn.mtime, _text:nn._text, fmExtra:nn.fmExtra});
+          if (same === cur){ editor.innerHTML = sanitize(cur.html); cur.html = cleanHTML(); resolveImages(); }
+          changed = true; continue;
+        }
+        if (same) nn.id = uid();
+        db.notes.push(nn); ensureNums(); changed = true; continue;
+      }
+      if (n._w || n.mtime == null || Math.abs(f.mtime - n.mtime) <= 1) continue;
+      const rd = await call(() => b.read(n.file)); if (rd.error) continue;
+      if (rd.text === n._text){ n.mtime = rd.mtime; continue; }      // solo la data è cambiata
+      if (n === cur && (dirty || editTimer)){ conflict(n, rd.mtime); continue; }
+      await reloadFromDisk(n); changed = true;
+    }
+    for (const n of [...db.notes]){
+      if (!n.file || n.mtime == null || n._w || names.has(n.file.toLowerCase())) continue;
+      db.notes = db.notes.filter(x => x !== n); hist = hist.filter(x => x !== n.id); changed = true;
+      if (n === cur){
+        cur = null; hpos = hist.length - 1;
+        const next = hist[hpos] && byId(hist[hpos]) || [...db.notes].sort((x, y) => y.modified - x.modified)[0] || createNote('Nuova nota');
+        openNote(next.id, {push: !hist.includes(next.id)});
+        msgBox('Nota rimossa', `Il file della nota "${n.title}" è stato eliminato o spostato fuori da Quaderno.`, {icon:'i'});
+      }
+    }
+    if (changed){ if (cur) hpos = hist.lastIndexOf(cur.id); markBroken(); updateChrome(); }
+  } finally { scanning = false; }
+}
+let rescanTimer = null;
+const rescanSoon = () => { clearTimeout(rescanTimer); rescanTimer = setTimeout(rescan, 400); };
+function seed(){
+  const L = t => `<a class="nl">${esc(t)}</a>`;
+  const H = (i,t) => `<span style="background-color: ${HL[i].color};">${esc(t)}</span>`;
+  const D = s => `<div>${s || '<br>'}</div>`;
+  const k = MOD;
+  createNote('Scorciatoie da tastiera', [
+    'Scorciatoie da tastiera', '',
+    `${k}N         nuova nota`,
+    `${k}O         libreria (cerca in tutte le note)`,
+    `${k}L         collega la parola/frase selezionata`,
+    `${k}Shift+L   togli il collegamento`,
+    `${k}1 / 2 / 3 evidenziatore giallo / verde / rosa`,
+    `${k}U         sottolinea`,
+    `${k}0         togli evidenziature e sottolineature`,
+    `${k}F  e  F3  trova / trova successivo`,
+    `Alt+← / Alt+→ nota precedente / successiva`,
+    `${k}P         stampa`, '',
+    'Torna a ' + '\u0000'
+  ].map(esc).map(s => s.replace('\u0000', L('Inizia da qui'))).map(D).join(''));
+  const a = createNote('Inizia da qui', [
+    D(esc('Inizia da qui')), D(''),
+    D(esc('Benvenuto nel tuo Quaderno. La prima riga di ogni nota è il suo titolo.')), D(''),
+    D(esc('Seleziona una parola o una frase e premi ' + k + 'L: diventa un ') + L('collegamento') + esc('. Se nella libreria esiste già una nota con quel titolo, si riapre; altrimenti ne nasce una nuova, con quel titolo.')), D(''),
+    D(esc('Basta poi scrivere il titolo di una nota esistente, ad esempio Scorciatoie da tastiera, e il collegamento compare da solo (Note > Collegamento automatico).')), D(''),
+    D(esc('Puoi usare tre evidenziatori: ') + H(1,'giallo') + ', ' + H(2,'verde') + ', ' + H(3,'rosa') + esc(' e ') + '<u>sottolineare</u>.'), D(''),
+    D(esc('Dal menu Foglio scegli quadretti 5 mm, quadretti 1 cm, puntini 5 mm o righe 1 cm, e attiva o togli il margine rosso.')), D(''),
+    D(esc('Scrivi @ per scegliere da un menu a tendina la nota da collegare.')), D(''),
+    D(esc('Le note si salvano da sole mentre scrivi: con una cartella di lavoro ognuna diventa un file Markdown (.md).'))
+  ].join(''));
+  db.settings.lastId = a.id;
+}
+
+/* ================= pulizia HTML ================= */
+const IMG_EXT = /\.(png|jpe?g|gif|webp|bmp|svg)$/i;
+function okImgPath(p){
+  if (!p || p.length > 500) return false;
+  if (/^https?:\/\/[^\s"<>]+$/i.test(p)) return true;
+  return !/["<>\\]/.test(p) && !/^[\/]/.test(p) && !/^[a-z][a-z0-9+.-]*:/i.test(p) && !/(^|\/)\.\.(\/|$)/.test(p);
+}
+function sanitize(html){
+  const t = document.createElement('template'); t.innerHTML = html;
+  (function walk(node){
+    for (const c of [...node.childNodes]){
+      if (c.nodeType === 3) continue;
+      if (c.nodeType !== 1){ c.remove(); continue; }
+      const tag = c.tagName.toUpperCase();
+      if (tag === 'IMG'){
+        const src = c.getAttribute('data-src') || '', w = c.getAttribute('width') || '';
+        if (!okImgPath(src)){ c.remove(); continue; }
+        const im = document.createElement('img'); im.setAttribute('data-src', src);
+        if (/^\d{1,4}%?$/.test(w)) im.setAttribute('width', w);
+        c.replaceWith(im); continue;
+      }
+      if (['SCRIPT','STYLE','IFRAME','OBJECT','EMBED','SVG','LINK','META','TEMPLATE','VIDEO','AUDIO','CANVAS','INPUT','TEXTAREA','BUTTON','SELECT'].includes(tag)){ c.remove(); continue; }
+      walk(c);
+      if (tag === 'DIV' || tag === 'P' || tag === 'LI' || /^H[1-6]$/.test(tag)){
+        const d = document.createElement('div'); d.append(...c.childNodes); c.replaceWith(d);
+      } else if (tag === 'BR'){
+        c.replaceWith(document.createElement('br'));
+      } else if (tag === 'U'){
+        const u = document.createElement('u'); u.append(...c.childNodes); c.replaceWith(u);
+      } else if (tag === 'A'){
+        const a = document.createElement('a'); a.className = 'nl';
+        if (c.dataset && c.dataset.auto) a.dataset.auto = '1';
+        a.append(...c.childNodes); c.replaceWith(a);
+      } else if (tag === 'SPAN' || tag === 'MARK' || tag === 'FONT'){
+        const st = c.style || {};
+        const bg = st.backgroundColor, td = (st.textDecorationLine || st.textDecoration || '');
+        const s = document.createElement('span');
+        if (bg && bg !== 'transparent' && !/rgba\([^)]*,\s*0\)$/.test(bg) && /^(rgb|#)/.test(bg)) s.style.backgroundColor = bg;
+        if (/underline/.test(td)) s.style.textDecoration = 'underline';
+        if (!s.getAttribute('style')) c.replaceWith(...c.childNodes);
+        else { s.append(...c.childNodes); c.replaceWith(s); }
+      } else {
+        c.replaceWith(...c.childNodes);
+      }
+    }
+  })(t.content);
+  return t.innerHTML;
+}
+function cleanHTML(){
+  const c = editor.cloneNode(true);
+  c.querySelectorAll('img').forEach(im => { im.removeAttribute('src'); im.removeAttribute('style'); im.removeAttribute('class'); im.removeAttribute('alt'); });
+  c.querySelectorAll('a.nl').forEach(a => { a.classList.remove('broken'); a.removeAttribute('style'); });
+  c.querySelectorAll('[style]').forEach(el => {
+    for (const p of ['font-size','font-family','font-weight','color','line-height']) el.style.removeProperty(p);
+    if (!el.getAttribute('style')){ el.removeAttribute('style'); if (el.tagName === 'SPAN') el.replaceWith(...el.childNodes); }
+  });
+  return c.innerHTML;
+}
+const plainCache = new Map();
+function plain(n){
+  const c = plainCache.get(n.id);
+  if (c && c.html === n.html) return c.t;
+  const t = document.createElement('template');
+  t.innerHTML = n.html.replace(/<\/div>|<br\s*\/?>/gi, ' $&');
+  const txt = t.content.textContent;
+  plainCache.set(n.id, {html:n.html, t:txt});
+  return txt;
+}
+function linksOf(n){
+  const t = document.createElement('template'); t.innerHTML = n.html;
+  return [...t.content.querySelectorAll('a.nl')].map(a => a.textContent);
+}
+
+/* ================= Markdown =================
+   [[Titolo]]  collegamento          ==testo==  evidenziatore giallo
+   <mark class="verde">, <mark class="rosa">  altri evidenziatori
+   <u>testo</u> sottolineato         front matter: id, creata, modificata    */
+const S = {LO:'', LC:'', UO:'', UC:'', H1O:'', H1C:'', H2O:'', H2C:'', H3O:'', H3C:''};
+const conv = h('div', {'aria-hidden':'true', style:'display:none'});
+document.body.append(conv);
+function hlKind(bg){
+  const m = /rgba?\(\s*(\d+)\D+(\d+)\D+(\d+)(?:\D+([\d.]+))?/.exec(bg || ''); if (!m) return 0;
+  const [r, g, b] = [+m[1], +m[2], +m[3]]; const a = m[4] == null ? 1 : +m[4];
+  if (a === 0) return 0;
+  if (r > 180 && g > 170 && b < 140) return 1;
+  if (g > r && g > b) return 2;
+  if (r > g) return 3;
+  return 1;
+}
+function escapeMd(s){
+  return s.replace(/ /g, ' ')
+    .replace(/\\(?=[=\[<&\\])/g, '\\\\')
+    .replace(/&(?=(?:lt|gt|amp|quot|nbsp|#\d+);)/g, '&amp;')
+    .replace(/<(?=[A-Za-z\/!])/g, '&lt;')
+    .replace(/==/g, '\\=\\=')
+    .replace(/\[\[/g, '\\[\\[');
+}
+/* righe di testo di un contenitore: ogni <div> è una riga, <br> va a capo (un <br> finale è solo segnaposto) */
+function linesOf(el){
+  const out = []; let buf = null;
+  const inl = n => n.nodeType === 3 ? n.data : n.nodeName === 'BR' ? '\n' : [...n.childNodes].map(inl).join('');
+  for (const c of el.childNodes){
+    if (c.nodeType === 1 && (c.tagName === 'DIV' || c.tagName === 'P')){
+      if (buf !== null){ out.push(buf); buf = null; }
+      const sub = linesOf(c); out.push(...(sub.length ? sub : ['']));
+    } else if (c.nodeType === 1 && c.tagName === 'BR'){
+      out.push(buf === null ? '' : buf); buf = null;
+    } else if (c.nodeType === 3 || c.nodeType === 1){
+      buf = (buf === null ? '' : buf) + inl(c);
+    }
+  }
+  if (buf !== null) out.push(buf);
+  return out.join('\n').split('\n');
+}
+function htmlToMdLines(html){
+  conv.innerHTML = html;
+  const imgs = [];
+  conv.querySelectorAll('img').forEach(im => {
+    const src = im.getAttribute('data-src') || '', w = im.getAttribute('width');
+    const enc = /^https?:/i.test(src) ? src : encodeURI(src).replace(/\(/g, '%28').replace(/\)/g, '%29');
+    imgs.push(w ? `<img src="${enc}" width="${w}">` : `![](${enc})`);
+    im.replaceWith('\uE00B' + (imgs.length - 1) + '\uE00C');
+  });
+  conv.querySelectorAll('a').forEach(a => { a.textContent = S.LO + a.textContent + S.LC; });
+  const wrap = (el, o, c) => { el.prepend(o); el.append(c); };
+  conv.querySelectorAll('u, span').forEach(el => {
+    if (el.tagName === 'U' || /underline/.test(el.style.textDecoration || el.style.textDecorationLine || '')) wrap(el, S.UO, S.UC);
+    const k = el.tagName === 'SPAN' ? hlKind(el.style.backgroundColor) : 0;
+    if (k) wrap(el, S['H' + k + 'O'], S['H' + k + 'C']);
+  });
+  let txt = linesOf(conv).join('\n');
+  conv.innerHTML = '';
+  txt = txt.replace(/|||/g, '');
+  const rep = {[S.LO]:'[[', [S.LC]:']]', [S.UO]:'<u>', [S.UC]:'</u>', [S.H1O]:'==', [S.H1C]:'==',
+               [S.H2O]:'<mark class="verde">', [S.H2C]:'</mark>', [S.H3O]:'<mark class="rosa">', [S.H3C]:'</mark>'};
+  return txt.replace(/\r/g, '').split('\n').map(l => escapeMd(l).replace(/[-]/g, c => rep[c]).replace(/\uE00B(\d+)\uE00C/g, (m, i) => imgs[+i]));
+}
+function isoLocal(t){
+  const d = new Date(t), p = x => String(x).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+function serializeNote(n){
+  const lines = htmlToMdLines(n.html);
+  lines[0] = '# ' + escapeMd(n.title);
+  while (lines.length > 1 && !lines[lines.length - 1].trim()) lines.pop();
+  const fm = ['---', `id: ${n.id}`, ...(n.num ? [`numero: ${n.num}`] : []), `creata: ${isoLocal(n.created)}`, `modificata: ${isoLocal(n.modified)}`, ...(n.fmExtra || []), '---'];
+  return fm.concat(lines).join('\n') + '\n';
+}
+const ENT = {'&lt;':'<', '&gt;':'>', '&amp;':'&', '&quot;':'"', '&nbsp;':' '};
+function parseInline(s){
+  let out = '', i = 0, m;
+  const hl = (k, inner) => `<span style="background-color: ${HL[k].color};">${parseInline(inner)}</span>`;
+  while (i < s.length){
+    const c = s[i], rest = s.slice(i);
+    if (c === '\\' && i + 1 < s.length && '=[<&\\'.includes(s[i + 1])){ out += esc(s[i + 1]); i += 2; continue; }
+    if (rest.startsWith('![[')){        // incorporamento in stile Obsidian
+      const j = s.indexOf(']]', i + 3);
+      if (j > i + 3){ const t = s.slice(i + 3, j).split('|')[0].trim(); if (IMG_EXT.test(t)){ out += imgTag(t.includes('/') ? t : 'allegati/' + t, ''); i = j + 2; continue; } }
+    }
+    if ((m = /^!\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+"[^"]*")?\s*\)/.exec(rest))){ out += imgTag(m[1], ''); i += m[0].length; continue; }
+    if ((m = /^<img\b[^>]*>/i.exec(rest))){
+      const src = /\bsrc\s*=\s*["']([^"']+)["']/i.exec(m[0]), w = /\bwidth\s*=\s*["']?(\d{1,4}%?)/i.exec(m[0]);
+      if (src){ out += imgTag(src[1], w ? w[1] : ''); i += m[0].length; continue; }
+    }
+    if (rest.startsWith('[[')){
+      const j = s.indexOf(']]', i + 2);
+      if (j > i + 2){
+        const t = s.slice(i + 2, j).split('|')[0].split('#')[0].trim();
+        if (t){ out += '<a class="nl">' + esc(textOf(parseInline(t))) + '</a>'; i = j + 2; continue; }
+      }
+    }
+    if (rest.startsWith('==')){
+      const j = s.indexOf('==', i + 2);
+      if (j > i + 2){ out += hl(1, s.slice(i + 2, j)); i = j + 2; continue; }
+    }
+    if (rest.startsWith('<u>')){
+      const j = s.indexOf('</u>', i + 3);
+      if (j >= 0){ out += '<u>' + parseInline(s.slice(i + 3, j)) + '</u>'; i = j + 4; continue; }
+    }
+    if ((m = /^<mark(?:\s+class=["']?(\w+)["']?)?\s*>/i.exec(rest))){
+      const j = s.indexOf('</mark>', i + m[0].length);
+      if (j >= 0){ out += hl({verde:2, green:2, rosa:3, pink:3}[(m[1] || '').toLowerCase()] || 1, s.slice(i + m[0].length, j)); i = j + 7; continue; }
+    }
+    if (c === '&' && (m = /^&(?:lt|gt|amp|quot|nbsp|#(\d+));/.exec(rest))){
+      out += esc(m[1] ? String.fromCodePoint(+m[1]) : ENT[m[0]]); i += m[0].length; continue;
+    }
+    out += esc(c); i++;
+  }
+  return out;
+}
+function imgTag(path, w){
+  let p = path; if (!/^https?:/i.test(p)){ try { p = decodeURI(p); } catch(e){} p = p.replace(/^\.\//, ''); }
+  if (!okImgPath(p)) return esc(path);
+  return `<img data-src="${esc(p)}"${/^\d{1,4}%?$/.test(w || '') ? ` width="${w}"` : ''}>`;
+}
+function textOf(html){ const t = document.createElement('template'); t.innerHTML = html; return t.content.textContent; }
+function mdToNote(text, fileName){
+  text = String(text).replace(/^﻿/, '').replace(/\r\n?/g, '\n');
+  const fm = {}, extra = []; let body = text;
+  if (text.startsWith('---\n')){
+    const end = text.indexOf('\n---', 3);
+    if (end >= 0){
+      const after = text.indexOf('\n', end + 4);
+      for (const line of text.slice(4, end).split('\n')){
+        const m = /^(id|creata|modificata|numero):\s*(.*)$/.exec(line);
+        if (m) fm[m[1]] = m[2].trim(); else if (line.trim()) extra.push(line);
+      }
+      body = after < 0 ? '' : text.slice(after + 1);
+    }
+  }
+  const lines = body.split('\n');
+  while (lines.length && !lines[0].trim()) lines.shift();
+  let title;
+  if (lines.length && /^#\s+/.test(lines[0])) title = textOf(parseInline(lines.shift().replace(/^#\s+/, ''))).trim();
+  if (!title) title = fileName.replace(/\.md$/i, '');
+  while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+  const html = `<div>${esc(title)}</div>` + lines.map(l => `<div>${parseInline(l) || '<br>'}</div>`).join('');
+  const dt = s => { const t = Date.parse(s || ''); return isNaN(t) ? null : t; };
+  return {id: fm.id || null, title, html, created: dt(fm.creata), modified: dt(fm.modificata), num: parseInt(fm.numero, 10) || null, fmExtra: extra};
+}
+
+/* ================= accesso alla cartella ================= */
+function elBackend(folder){            // app desktop: il file system lo gestisce main.js / fsops.js
+  const f = (op, ...a) => qapi.fs(op, folder, ...a);
+  return {kind:'el', label:folder, folder,
+    loadAll: () => f('loadAll'), list: () => f('list'), read: n => f('read', n),
+    write: (n, t, e) => f('write', n, t, e), rename: (a, b) => f('rename', a, b), trash: n => f('trash', n),
+    mkdir: d => f('mkdir', d), renameDir: (a, b) => f('renameDir', a, b), trashDir: d => f('trashDir', d),
+    writeBin: async (r, blob) => f('writeBin', r, new Uint8Array(await blob.arrayBuffer())),
+    copyBin: (a, b) => f('copyBin', a, b),
+    url: r => qapi.fileUrl(folder, r),
+    open: () => qapi.openPath(folder)};
+}
+function fsaBackend(root){             // Chrome / Edge: File System Access API
+  const okDir = n => !n.startsWith('.') && !n.startsWith('_') && n.toLowerCase() !== 'allegati';
+  const dirOf = async (segs, create) => { let d = root; for (const s of segs) d = await d.getDirectoryHandle(s, {create:!!create}); return d; };
+  const split = r => { const seg = r.split('/'); return [seg.slice(0, -1), seg[seg.length - 1]]; };
+  const fileH = async (r, create) => { const [ds, n] = split(r); return (await dirOf(ds, create)).getFileHandle(n, {create:!!create}); };
+  const exists = async r => { try { await fileH(r); return true; } catch(e){ return false; } };
+  const writeIn = async (r, data) => { const hd = await fileH(r, true); const w = await hd.createWritable(); await w.write(data); await w.close(); return (await hd.getFile()).lastModified; };
+  const scan = async () => {
+    const out = [], dirs = [];
+    const md = (n, hd) => hd.kind === 'file' && /\.md$/i.test(n) && !n.startsWith('.');
+    for await (const [name, hd] of root.entries()){
+      if (md(name, hd)){ const fl = await hd.getFile(); out.push({name, mtime:fl.lastModified, fl}); }
+      else if (hd.kind === 'directory' && okDir(name)){
+        dirs.push(name);
+        for await (const [n2, h2] of hd.entries()) if (md(n2, h2)){ const fl = await h2.getFile(); out.push({name:name + '/' + n2, mtime:fl.lastModified, fl}); }
+      }
+    }
+    return {out, dirs};
+  };
+  const toTrash = async (r, data, sub) => {
+    const t = await dirOf(['_cestino', ...(sub ? [sub] : [])], true);
+    let n = r.split('/').pop();
+    try { await t.getFileHandle(n); n = n.replace(/\.md$/i, '') + ' ' + isoLocal(now()).replace(/:/g, '-') + '.md'; } catch(e){}
+    const hd = await t.getFileHandle(n, {create:true}); const w = await hd.createWritable(); await w.write(data); await w.close();
+  };
+  const copyTree = async (from, to) => { for await (const [n, hd] of from.entries()){
+    if (hd.kind === 'file'){ const fl = await hd.getFile(); const o = await to.getFileHandle(n, {create:true}); const w = await o.createWritable(); await w.write(fl); await w.close(); }
+    else await copyTree(hd, await to.getDirectoryHandle(n, {create:true})); } };
+  const urls = new Map();
+  const be = {kind:'fsa', label:root.name, root,
+    async list(){ const {out, dirs} = await scan(); return {files:out.map(x => ({name:x.name, mtime:x.mtime})), dirs}; },
+    async loadAll(){ const {out, dirs} = await scan(); for (const x of out){ x.text = await x.fl.text(); delete x.fl; } return {files:out, dirs}; },
+    async read(r){ const fl = await (await fileH(r)).getFile(); return {text:await fl.text(), mtime:fl.lastModified}; },
+    async write(r, text, expect){
+      if (expect != null){ try { const fl = await (await fileH(r)).getFile(); if (Math.abs(fl.lastModified - expect) > 1) return {conflict:true, mtime:fl.lastModified}; } catch(e){} }
+      return {ok:true, mtime: await writeIn(r, text)};
+    },
+    async rename(a, b){
+      if (a.toLowerCase() === b.toLowerCase()) return {ok:true, same:true};
+      if (!(await exists(a))) return {ok:true};
+      if (await exists(b)) return {error:'esiste già il file ' + b};
+      const r = await be.read(a); const mtime = await writeIn(b, r.text);
+      const [ds, n] = split(a); await (await dirOf(ds)).removeEntry(n);
+      return {ok:true, mtime};
+    },
+    async trash(r){
+      if (!(await exists(r))) return {ok:true};
+      const t = await be.read(r); await toTrash(r, t.text, r.includes('/') ? r.split('/')[0] : '');
+      const [ds, n] = split(r); await (await dirOf(ds)).removeEntry(n);
+      return {ok:true};
+    },
+    async mkdir(d){ await root.getDirectoryHandle(d, {create:true}); return {ok:true}; },
+    async renameDir(a, b){   // il browser non sa rinominare cartelle: copia e cancella
+      if (a.toLowerCase() !== b.toLowerCase()){ try { await root.getDirectoryHandle(b); return {error:'esiste già un quaderno ' + b}; } catch(e){} }
+      const src = await root.getDirectoryHandle(a), dst = await root.getDirectoryHandle(b, {create:true});
+      await copyTree(src, dst); await root.removeEntry(a, {recursive:true});
+      return {ok:true};
+    },
+    async trashDir(d){
+      const src = await root.getDirectoryHandle(d), dst = await dirOf(['_cestino', d + ' ' + isoLocal(now()).replace(/:/g, '-')], true);
+      await copyTree(src, dst); await root.removeEntry(d, {recursive:true});
+      return {ok:true};
+    },
+    async writeBin(r, blob){
+      let name = r; const m = /^(.*?)(\.[^.]+)$/.exec(r);
+      for (let i = 2; await exists(name); i++) name = `${m[1]}-${i}${m[2]}`;
+      await writeIn(name, blob); return {ok:true, name};
+    },
+    async copyBin(a, b){ if (!(await exists(a)) || await exists(b)) return {ok:true}; await writeIn(b, await (await fileH(a)).getFile()); return {ok:true}; },
+    async url(r){
+      if (urls.has(r)) return urls.get(r);
+      try { const u = URL.createObjectURL(await (await fileH(r)).getFile()); urls.set(r, u); return u; } catch(e){ return ''; }
+    },
+    open(){ status(`Cartella di lavoro: ${root.name} (il browser non può aprirla in Esplora risorse).`); }};
+  return be;
+}
+const idb = () => new Promise((res, rej) => { const r = indexedDB.open('quaderno', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+async function idbGet(k){ try { const d = await idb(); return await new Promise(res => { const q = d.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => res(null); }); } catch(e){ return null; } }
+async function idbSet(k, v){ try { const d = await idb(); return await new Promise(res => { const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = () => res(true); t.onerror = () => res(false); }); } catch(e){ return false; } }
+
+/* ================= DOM dell'editor ================= */
+function topBlock(n){ while (n && n.parentNode !== editor) n = n.parentNode; return n; }
+function isTitleNode(n){
+  const top = topBlock(n); if (!top) return false;
+  const f = editor.firstChild;
+  if (f && f.nodeType === 1 && f.tagName === 'DIV') return top === f;
+  for (let c = f; c; c = c.nextSibling){
+    if (c === top) return true;
+    if (c.nodeType === 1 && (c.tagName === 'DIV' || c.tagName === 'BR')) return false;
+  }
+  return false;
+}
+function closestLink(n){
+  if (!n) return null;
+  const el = n.nodeType === 3 ? n.parentElement : n;
+  const a = el && el.closest ? el.closest('a.nl') : null;
+  return a && editor.contains(a) ? a : null;
+}
+function getTitle(){
+  const t = (editor.innerText || '').split('\n')[0].replace(/\s+/g, ' ').trim();
+  return t || 'Senza titolo';
+}
+function selInEditor(){
+  const s = getSelection();
+  return s.rangeCount && editor.contains(s.getRangeAt(0).commonAncestorContainer) ? s : null;
+}
+function textNodes(root){
+  const out = [], w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  while (w.nextNode()) out.push(w.currentNode);
+  return out;
+}
+function offsetOf(node, off){
+  const r = document.createRange(); r.selectNodeContents(editor); r.setEnd(node, off);
+  return r.toString().length;
+}
+function placeCaret(node, off){
+  const r = document.createRange(); r.setStart(node, off); r.collapse(true);
+  const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+}
+function caretEndOfTitle(){
+  const f = editor.firstChild; if (!f) return;
+  const r = document.createRange();
+  if (f.nodeType === 1) r.selectNodeContents(f); else r.selectNode(f);
+  r.collapse(false);
+  const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+}
+function selectTitle(){
+  const f = editor.firstChild; if (!f) return;
+  const r = document.createRange();
+  if (f.nodeType === 1) r.selectNodeContents(f); else r.selectNode(f);
+  const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+}
+
+/* ================= apertura e salvataggio ================= */
+function openNote(id, {push = true, selTitle = false} = {}){
+  const n = byId(id); if (!n) return;
+  if (cur && cur.id !== id) commit();
+  cur = n; openedTitle = n.title;
+  editor.innerHTML = sanitize(n.html) || '<div><br></div>';
+  // normalizza senza segnare modifiche: aprire una nota non deve riscriverne il file
+  n.html = cleanHTML();
+  if (push){
+    hist = hist.slice(0, hpos + 1);
+    if (hist[hpos] !== id){ hist.push(id); hpos = hist.length - 1; }
+  }
+  db.settings.lastId = id; db.settings.lastNb = n.nb || ''; saveSettings();
+  clearFind(); hideImgBar(); resolveImages();
+  markBroken(); updateChrome();
+  editor.focus({preventScroll:true});
+  if (selTitle) selectTitle(); else caretEndOfTitle();
+  sheet.scrollTop = 0;
+}
+function saveNow(){
+  if (!cur) return;
+  const html = cleanHTML(), title = getTitle();
+  if (html !== cur.html || title !== cur.title){
+    cur.html = html; cur.title = title; cur.modified = now(); cur._w = true;
+    if (backend && cur.file && norm(openedTitle) !== norm(title)){   // titolo cambiato: il file segue il titolo
+      const nf = fileNameFor(cur);
+      if (nf !== cur.file){ if (!cur._renameFrom) cur._renameFrom = cur.file; cur.file = nf; }
+    }
+    persist();
+  }
+  dirty = false; updateChrome();
+}
+function flushEdit(){
+  if (editTimer){ clearTimeout(editTimer); editTimer = null; }
+  if (cur) saveNow();
+}
+function commit(){
+  if (!cur) return;
+  flushEdit();
+  if (openedTitle && norm(openedTitle) !== norm(cur.title) && !findByTitle(openedTitle, cur.id)) renameLinks(openedTitle, cur.title);
+  if (findByTitle(cur.title, cur.id)) status(`Attenzione: esiste già un'altra nota intitolata "${cur.title}".`);
+  if (backend && cur.file && norm(openedTitle) !== norm(cur.title)){   // titolo cambiato: rinomina anche il file
+    const nf = fileNameFor(cur);
+    if (cur.file && nf !== cur.file){ if (!cur._renameFrom) cur._renameFrom = cur.file; cur.file = nf; cur._w = true; persist(); }
+  }
+  openedTitle = cur.title;
+}
+function renameLinks(oldT, newT){
+  const k = norm(oldT); let count = 0;
+  for (const n of db.notes){
+    if (n === cur) continue;
+    const t = document.createElement('template'); t.innerHTML = n.html; let ch = false;
+    t.content.querySelectorAll('a.nl').forEach(a => { if (norm(a.textContent) === k){ a.textContent = newT; ch = true; count++; } });
+    if (ch){ n.html = t.innerHTML; n.modified = now(); n._w = true; }
+  }
+  if (count){ persist(); status(`Aggiornati ${count} collegamenti: "${oldT}" → "${newT}".`); }
+}
+function onEdit(){
+  dirty = true; updateStatus(); clearFind();
+  clearTimeout(editTimer);
+  editTimer = setTimeout(() => { editTimer = null; if (!mention) autolink(); saveNow(); markBroken(); }, 450);
+}
+function markBroken(){
+  editor.querySelectorAll('a.nl').forEach(a => {
+    const t = a.textContent.trim();
+    if (!t){ a.replaceWith(...a.childNodes); return; }
+    a.classList.toggle('broken', !findByTitle(t));
+  });
+}
+
+/* ================= collegamenti (alla Tomboy) ================= */
+function linkifyTextNode(T, re, caretOff){
+  const text = T.data; re.lastIndex = 0; let m; const parts = [];
+  while ((m = re.exec(text))){
+    const s = m.index, e = s + m[0].length;
+    if (e === s){ re.lastIndex++; continue; }
+    if (caretOff != null && caretOff >= s && caretOff <= e) continue;   // parola ancora in scrittura
+    parts.push([s, e]);
+  }
+  if (!parts.length) return null;
+  const frag = document.createDocumentFragment(); let caretNode = null, caretIn = 0, pos = 0;
+  const addText = (a, b) => {
+    if (b <= a) return;
+    const tn = document.createTextNode(text.slice(a, b)); frag.append(tn);
+    if (caretOff != null && !caretNode && caretOff >= a && caretOff <= b){ caretNode = tn; caretIn = caretOff - a; }
+  };
+  for (const [s, e] of parts){
+    addText(pos, s);
+    const a = document.createElement('a'); a.className = 'nl'; a.dataset.auto = '1'; a.textContent = text.slice(s, e);
+    frag.append(a); pos = e;
+  }
+  addText(pos, text.length);
+  T.parentNode.replaceChild(frag, T);
+  return caretNode ? [caretNode, caretIn] : null;
+}
+function autolink(){
+  if (!cur) return;
+  const sel = getSelection(); let cNode = null, cOff = null;
+  if (sel.rangeCount && sel.isCollapsed && sel.anchorNode && sel.anchorNode.nodeType === 3 && editor.contains(sel.anchorNode)){ cNode = sel.anchorNode; cOff = sel.anchorOffset; }
+  // i collegamenti automatici che non corrispondono più a una nota tornano testo normale
+  editor.querySelectorAll('a.nl[data-auto]').forEach(a => {
+    if (cNode && a.contains(cNode)) return;
+    if (!findByTitle(a.textContent, cur.id)) a.replaceWith(...a.childNodes);
+  });
+  if (!db.settings.autolink) return;
+  const titles = [...new Set(db.notes.filter(n => n.id !== cur.id).map(n => n.title.trim()).filter(t => t.length >= 3 && t !== 'Senza titolo'))]
+    .sort((a, b) => b.length - a.length);
+  if (!titles.length) return;
+  let re;
+  try { re = new RegExp('(?<![\\p{L}\\p{N}_])(?:' + titles.map(escRe).join('|') + ')(?![\\p{L}\\p{N}_])', 'giu'); } catch(e){ return; }
+  const nodes = [];
+  const w = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT, {acceptNode: n =>
+    (n.parentElement.closest('a') || isTitleNode(n)) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT});
+  while (w.nextNode()) nodes.push(w.currentNode);
+  let fix = null;
+  for (const t of nodes){
+    const r = linkifyTextNode(t, re, t === cNode ? cOff : null);
+    if (r && t === cNode) fix = r;
+  }
+  if (fix) placeCaret(fix[0], fix[1]);
+}
+function followLink(title){
+  title = (title || '').replace(/\s+/g, ' ').trim();
+  if (!title) return;
+  flushEdit();
+  let n = findByTitle(title), created = false;
+  if (!n){ n = createNote(title); persist(); created = true; }
+  openNote(n.id);
+  status(created ? `Creata la nuova nota "${title}". Alt+← per tornare indietro.` : `Riaperta la nota "${n.title}".`);
+}
+function createLink(){
+  const s = selInEditor();
+  if (!s) return status('Metti il cursore nel testo della nota.');
+  const inA = closestLink(s.anchorNode);
+  if (inA && s.isCollapsed) return followLink(inA.textContent);
+  if (s.isCollapsed && s.modify){ s.modify('move', 'backward', 'word'); s.modify('extend', 'forward', 'word'); }
+  const r = s.getRangeAt(0), raw = s.toString();
+  const text = raw.replace(/\s+/g, ' ').trim();
+  if (!text) return status('Seleziona prima una parola o una frase.');
+  if (topBlock(r.startContainer) !== topBlock(r.endContainer) || /[\r\n]/.test(raw)) return status('Il collegamento deve stare su una sola riga.');
+  if (isTitleNode(r.startContainer)) return status('Il titolo della nota non può contenere collegamenti.');
+  if (text.length > 150) return status('Selezione troppo lunga per diventare un titolo.');
+  const lead = raw.match(/^\s*/)[0], trail = raw.match(/\s*$/)[0];
+  document.execCommand('insertHTML', false, esc(lead) + '<a class="nl">' + esc(text) + '</a>' + esc(trail));
+  saveNow();
+  followLink(text);
+}
+function unlink(){
+  const s = selInEditor(); const a = s && closestLink(s.anchorNode);
+  if (!a) return status('Il cursore non è su un collegamento.');
+  a.replaceWith(...a.childNodes);
+  if (db.settings.autolink && findByTitle(a.textContent, cur.id)) status('Nota: con il collegamento automatico attivo il link verrà ricreato.');
+  onEdit();
+}
+// scrivendo a ridosso di un collegamento il testo resta fuori dal link
+editor.addEventListener('beforeinput', e => {
+  if (e.inputType !== 'insertText' || !e.data) return;
+  const s = getSelection(); if (!s.isCollapsed) return;
+  const a = closestLink(s.anchorNode); if (!a) return;
+  const r = document.createRange(); r.selectNodeContents(a); r.setEnd(s.anchorNode, s.anchorOffset);
+  const off = r.toString().length, len = a.textContent.length;
+  if (off !== 0 && off !== len) return;
+  e.preventDefault();
+  const tn = document.createTextNode(e.data);
+  a.parentNode.insertBefore(tn, off === 0 ? a : a.nextSibling);
+  placeCaret(tn, tn.data.length);
+  onEdit();
+});
+editor.addEventListener('click', e => {
+  const a = e.target.closest && e.target.closest('a.nl');
+  if (!a || !editor.contains(a)) return;
+  if (!getSelection().isCollapsed) return;
+  e.preventDefault();
+  followLink(a.textContent);
+});
+
+/* ================= menu "@" per collegare note esistenti ================= */
+let mention = null;   // {node, at, el, items, hot, query}
+function mentionCheckStart(e){
+  if (e.inputType !== 'insertText' || e.data !== '@' || mention) return;
+  const s = getSelection();
+  if (!s.isCollapsed || !s.anchorNode || s.anchorNode.nodeType !== 3) return;
+  const node = s.anchorNode, at = s.anchorOffset - 1;
+  if (at < 0 || node.data[at] !== '@') return;
+  if (closestLink(node) || isTitleNode(node)) return;
+  const prev = at > 0 ? node.data[at - 1] : '';
+  if (prev && /[\p{L}\p{N}_.]/u.test(prev)) return;   // es. indirizzi e-mail: niente menu
+  mention = {node, at, el:null, items:[], hot:0, query:''};
+  mentionUpdate();
+}
+function mentionQuery(){
+  if (!mention) return null;
+  const s = getSelection();
+  if (!s.isCollapsed || s.anchorNode !== mention.node || !mention.node.isConnected) return null;
+  const off = s.anchorOffset;
+  if (off <= mention.at || mention.node.data[mention.at] !== '@') return null;
+  const q = mention.node.data.slice(mention.at + 1, off);
+  if (q.length > 80 || /^\s/.test(q) || /\s{2,}$/.test(q)) return null;
+  return q;
+}
+function mentionUpdate(){
+  const q = mentionQuery();
+  if (q == null) return mentionClose();
+  mention.query = q;
+  const k = norm(q);
+  const cand = db.notes.filter(n => n !== cur && (!k || norm(n.title).includes(k)));
+  cand.sort((a, b) => {
+    const pa = norm(a.title).startsWith(k) ? 0 : 1, pb = norm(b.title).startsWith(k) ? 0 : 1;
+    return pa - pb || b.modified - a.modified;
+  });
+  const items = cand.slice(0, 50).map(n => ({title:n.title, nb:n.nb || '', isNew:false}));
+  const qt = q.replace(/\s+/g, ' ').trim();
+  if (qt && !findByTitle(qt)) items.push({title:qt, isNew:true});
+  if (!items.length && q && /\s$/.test(q)) return mentionClose();   // nessuna nota e spazio: chiudo
+  mention.items = items;
+  mention.hot = Math.min(mention.hot, Math.max(0, items.length - 1));
+  mentionRender();
+}
+function mentionRender(){
+  if (!mention.el){
+    mention.el = h('div', {class:'menu mention'});
+    mention.el.addEventListener('mousedown', e => e.preventDefault());
+    document.body.append(mention.el);
+  }
+  const el = mention.el; el.innerHTML = '';
+  el.append(h('div', {class:'mhead'}, mention.items.length ? 'Collega a nota  (↑↓  Invio  Esc)' : 'Scrivi il titolo di una nota…'));
+  mention.items.forEach((it, i) => {
+    const row = h('div', {class:'mi' + (it.isNew ? ' new' : '') + (i === mention.hot ? ' hot' : '')},
+      h('span', null, it.isNew ? `Crea nuova nota "${it.title}"` : it.title),
+      h('span', {class:'mnb'}, it.isNew ? nbName(activeNb()) : nbName(it.nb)));
+    row.addEventListener('mouseenter', () => { mention.hot = i; [...el.querySelectorAll('.mi')].forEach((r, j) => r.classList.toggle('hot', j === i)); });
+    row.addEventListener('mousedown', e => { e.preventDefault(); mentionChoose(i); });
+    el.append(row);
+  });
+  const hotEl = el.querySelectorAll('.mi')[mention.hot];
+  if (hotEl) hotEl.scrollIntoView({block:'nearest'});
+  // posizione: sotto la "@"
+  const r = document.createRange(); r.setStart(mention.node, mention.at); r.setEnd(mention.node, mention.at + 1);
+  const rc = r.getBoundingClientRect();
+  const w = el.offsetWidth, hh = el.offsetHeight;
+  let top = rc.bottom + 2; if (top + hh > innerHeight - 4) top = Math.max(0, rc.top - hh - 2);
+  el.style.left = Math.max(0, Math.min(rc.left, innerWidth - w - 4)) + 'px';
+  el.style.top = top + 'px';
+}
+function mentionClose(){
+  if (mention && mention.el) mention.el.remove();
+  mention = null;
+}
+function mentionChoose(i){
+  if (!mention) return;
+  const it = mention.items[i]; const q = mentionQuery();
+  if (!it || q == null){ mentionClose(); return; }
+  const {node, at} = mention; mentionClose();
+  const r = document.createRange(); r.setStart(node, at); r.setEnd(node, at + 1 + q.length);
+  const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+  document.execCommand('insertHTML', false, '<a class="nl">' + esc(it.title) + '</a>&nbsp;');
+  if (it.isNew && !findByTitle(it.title)){ createNote(it.title); persist(); status(`Creata la nuova nota "${it.title}" e collegata.`); }
+  else status(`Collegata la nota "${it.title}".`);
+  onEdit(); markBroken();
+}
+function mentionKey(e){
+  if (!mention || !mention.el) return false;
+  const n = mention.items.length;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+    if (!n) return true;
+    mention.hot = (mention.hot + (e.key === 'ArrowDown' ? 1 : -1) + n) % n; mentionRender(); return true;
+  }
+  if (e.key === 'Enter' || e.key === 'Tab'){ if (n){ mentionChoose(mention.hot); return true; } mentionClose(); return e.key === 'Tab'; }
+  if (e.key === 'Escape'){ mentionClose(); return true; }
+  return false;
+}
+editor.addEventListener('input', mentionCheckStart);
+document.addEventListener('selectionchange', () => { if (mention) setTimeout(() => mention && mentionUpdate(), 0); });
+editor.addEventListener('blur', () => setTimeout(mentionClose, 0));
+sheet.addEventListener('scroll', () => { if (mention) mentionRender(); });
+
+/* ================= immagini ================= */
+async function resolveImages(){
+  if (!cur) return;
+  const n = cur, base = n.nb ? n.nb + '/' : '';
+  for (const im of editor.querySelectorAll('img[data-src]')){
+    const p = im.getAttribute('data-src'); let u = '';
+    if (/^https?:/i.test(p)) u = p;
+    else if (backend){ try { u = await backend.url(base + p); } catch(e){} }
+    if (cur !== n) return;
+    if (u){ if (im.getAttribute('src') !== u) im.src = u; }
+    else im.alt = '[immagine non trovata: ' + p + ']';
+  }
+  fitImages();
+}
+/* l'altezza dell'immagine viene arrotondata a un numero intero di righe, così il testo sotto resta sulla griglia */
+function fitImages(){
+  const lh = parseFloat(getComputedStyle(editor).lineHeight) || 19;
+  editor.querySelectorAll('img').forEach(im => {
+    im.style.marginBottom = '';
+    if (!im.complete || !im.naturalHeight) return;
+    const hh = im.getBoundingClientRect().height;
+    im.style.marginBottom = (Math.ceil((hh + 0.5) / lh) * lh - hh) + 'px';
+  });
+}
+editor.addEventListener('load', e => { if (e.target.tagName === 'IMG') fitImages(); }, true);
+addEventListener('resize', () => fitImages());
+const IMG_TYPES = /^image\/(png|jpeg|gif|webp|bmp|svg\+xml)$/;
+async function insertImages(files){
+  files = files.filter(f => IMG_TYPES.test(f.type));
+  if (!files.length) return false;
+  if (!backend){ msgBox('Immagini', 'Per inserire immagini serve una cartella di lavoro\n(File > Cartella di lavoro): le immagini vengono salvate nella sottocartella "allegati".', {icon:'i'}); return true; }
+  if (!cur) return true;
+  const s = getSelection();
+  const range = s.rangeCount && editor.contains(s.getRangeAt(0).commonAncestorContainer) ? s.getRangeAt(0).cloneRange() : null;
+  const pre = cur.nb ? cur.nb + '/' : '', tags = [];
+  for (const f of files){
+    const ext = {'image/jpeg':'jpg', 'image/svg+xml':'svg'}[f.type] || f.type.split('/')[1];
+    let base = f.name && !/^image\.\w+$/i.test(f.name) ? f.name.replace(/\.[^.]+$/, '') : 'immagine-' + isoLocal(now()).replace(/[-:]/g, '').replace('T', '-');
+    base = safeFile(base).replace(/\s+/g, '-').slice(0, 60);
+    const r = await call(() => backend.writeBin(pre + 'allegati/' + base + '.' + ext, f));
+    if (r.error){ status('Impossibile salvare l\'immagine: ' + r.error); continue; }
+    tags.push(`<img data-src="${esc(r.name.slice(pre.length))}">`);
+  }
+  if (!tags.length) return true;
+  editor.focus();
+  if (range){ s.removeAllRanges(); s.addRange(range); }
+  document.execCommand('insertHTML', false, tags.join(' '));
+  await resolveImages(); onEdit();
+  status(tags.length === 1 ? 'Immagine inserita (salvata in "allegati").' : `${tags.length} immagini inserite.`);
+  return true;
+}
+function pickImage(){ pickFiles('image/*', true, files => insertImages(files)); }
+let imgSel = null, imgBar = null;
+function hideImgBar(){ if (imgSel) imgSel.classList.remove('sel'); imgSel = null; if (imgBar){ imgBar.remove(); imgBar = null; } }
+function showImgBar(im){
+  hideImgBar(); imgSel = im; im.classList.add('sel');
+  const size = w => () => { if (w) im.setAttribute('width', w); else im.removeAttribute('width'); onEdit(); requestAnimationFrame(() => { fitImages(); showImgBar(im); }); };
+  const b = (l, t, fn) => { const x = h('button', {class:'btn', type:'button', title:t}, l); x.addEventListener('mousedown', e => e.preventDefault()); x.addEventListener('click', fn); return x; };
+  imgBar = h('div', {class:'imgbar'},
+    b('25%', 'Piccola', size('25%')), b('50%', 'Media', size('50%')), b('100%', 'Larghezza originale (max foglio)', size('')),
+    b('Apri', 'Apri l\'immagine', () => openImage(im)),
+    b('Elimina', 'Togli l\'immagine dalla nota (il file resta in "allegati")', () => { im.remove(); hideImgBar(); onEdit(); }));
+  document.body.append(imgBar);
+  const r = im.getBoundingClientRect();
+  imgBar.style.left = Math.max(0, Math.min(r.left, innerWidth - imgBar.offsetWidth - 4)) + 'px';
+  imgBar.style.top = Math.max(0, r.top - imgBar.offsetHeight - 4) + 'px';
+}
+function openImage(im){
+  const p = im.getAttribute('data-src') || '';
+  if (/^https?:/i.test(p) || !isEl){ if (im.src) window.open(im.src, '_blank'); return; }
+  const sep = qapi.platform === 'win32' ? '\\' : '/';
+  qapi.openPath(backend.folder + sep + ((cur.nb ? cur.nb + '/' : '') + p).split('/').join(sep));
+}
+editor.addEventListener('mousedown', e => {
+  if (e.target.tagName === 'IMG'){ e.preventDefault(); showImgBar(e.target); }
+  else if (imgSel) hideImgBar();
+});
+editor.addEventListener('keydown', e => {
+  if (!imgSel) return;
+  if (e.key === 'Delete' || e.key === 'Backspace'){ e.preventDefault(); imgSel.remove(); hideImgBar(); onEdit(); }
+  else hideImgBar();
+});
+sheet.addEventListener('scroll', () => { if (imgSel) hideImgBar(); });
+
+/* ================= quaderni ================= */
+function inputBox(title, label, value = ''){
+  let inp;
+  return new Promise(res => dialog({title, width:380,
+    build: b => { inp = h('input', {class:'w31', type:'text', value}); b.append(h('label', {class:'lbl'}, label, inp)); setTimeout(() => inp.select(), 0); },
+    buttons: [{label:'OK', def:true, value:'ok'}, {label:'Annulla', value:null}],
+    onClose: r => res(r === 'ok' ? inp.value.trim() : null)}));
+}
+const nbCount = nb => db.notes.filter(n => (n.nb || '') === nb).length;
+async function newNotebook(){
+  const name = await inputBox('Nuovo quaderno', 'Nome:', '');
+  if (!name) return null;
+  const nb = safeNb(name);
+  const ex = notebooks().find(x => x.toLowerCase() === nb.toLowerCase());
+  if (ex != null){ status(`Il quaderno "${nbName(ex)}" esiste già.`); return ex; }
+  if (backend){
+    const r = await call(() => backend.mkdir(nb));
+    if (r.error){ msgBox('Nuovo quaderno', 'Impossibile creare la cartella:\n' + r.error, {icon:'x'}); return null; }
+    backendDirs = [...backendDirs, nb];
+  } else { db.settings.notebooks = [...(db.settings.notebooks || []), nb]; saveSettings(); }
+  updateChrome(); status(`Creato il quaderno "${nb}".`);
+  return nb;
+}
+async function moveNote(n, nb){
+  if (!n || (n.nb || '') === nb) return;
+  if (n === cur) flushEdit();
+  if (backend){
+    await flushWrites();
+    const from = n.nb ? n.nb + '/' : '', to = nb ? nb + '/' : '';
+    const t = document.createElement('template'); t.innerHTML = n.html;
+    for (const im of t.content.querySelectorAll('img[data-src]')){       // le immagini viaggiano con la nota
+      const p = im.getAttribute('data-src');
+      if (!/^https?:/i.test(p)) await call(() => backend.copyBin(from + p, to + p));
+    }
+    const old = n.file; n.nb = nb; n.num = nextNum(nb, n); n.file = fileNameFor(n);
+    if (old && n.mtime != null && !n._renameFrom) n._renameFrom = old;
+    n._w = true; await flushWrites();
+  } else { n.nb = nb; n.num = nextNum(nb, n); n._w = true; persist(); }
+  if (n === cur){ db.settings.lastNb = nb; saveSettings(); resolveImages(); }
+  updateChrome(); status(`"${n.title}" spostata nel quaderno ${nbName(nb)}.`);
+}
+function chooseNotebook(title, current){
+  let lb;
+  return new Promise(res => dialog({title, width:340,
+    build: (b, api) => {
+      lb = listbox(it => api.close(it.id));
+      b.append(lb.el);
+      const list = notebooks();
+      lb.render(list.map(nb => ({id:nb, title:nbName(nb), sub:nbCount(nb) + ' note'})));
+      lb.select(Math.max(0, list.indexOf(current)));
+      lb.el.style.height = '180px';
+    },
+    buttons: [{label:'OK', def:true, act: api => { api.close(lb.selected ? lb.selected.id : null); return false; }},
+              {label:'Nuovo quaderno...', act: api => { api.close('\u0000new'); return false; }},
+              {label:'Annulla', value:'\u0000no'}],
+    onClose: r => { if (r === '\u0000new') newNotebook().then(res); else res(typeof r === 'string' && r !== '\u0000no' ? r : null); }}));
+}
+async function moveCurrent(){
+  if (!cur) return;
+  const nb = await chooseNotebook(`Sposta "${cur.title}" nel quaderno`, cur.nb || '');
+  if (nb != null) await moveNote(cur, nb);
+}
+async function renameNotebook(nb){
+  if (!nb) return;
+  const name = await inputBox('Rinomina quaderno', 'Nuovo nome:', nb);
+  if (!name) return;
+  const nn = safeNb(name);
+  if (!nn || nn === nb) return;
+  if (notebooks().some(x => x !== nb && x.toLowerCase() === nn.toLowerCase())) return msgBox('Rinomina quaderno', `Esiste già un quaderno "${nn}".`, {icon:'w'});
+  commit(); await flushWrites();
+  if (backend){
+    const r = await call(() => backend.renameDir(nb, nn));
+    if (r.error) return msgBox('Rinomina quaderno', 'Impossibile rinominare la cartella:\n' + r.error, {icon:'x'});
+    backendDirs = backendDirs.map(x => x === nb ? nn : x);
+    for (const n of db.notes) if (n.nb === nb){ n.nb = nn; n.file = nn + '/' + n.file.split('/').pop(); }
+  } else {
+    db.settings.notebooks = (db.settings.notebooks || []).map(x => x === nb ? nn : x);
+    for (const n of db.notes) if (n.nb === nb){ n.nb = nn; n._w = true; }
+    persist();
+  }
+  if (db.settings.lastNb === nb) db.settings.lastNb = nn;
+  saveSettings(); updateChrome(); status(`Quaderno "${nb}" rinominato in "${nn}".`);
+}
+async function deleteNotebook(nb){
+  if (!nb) return;
+  const list = db.notes.filter(n => (n.nb || '') === nb);
+  const r = await msgBox('Elimina quaderno', list.length
+      ? `Il quaderno "${nb}" contiene ${list.length} note.\nLe note passano nel quaderno Generale, con le loro immagini;\nla cartella del quaderno va nel _cestino.`
+      : `Eliminare il quaderno vuoto "${nb}"?`, {icon:'w', buttons:['OK','Annulla'], def:1});
+  if (r !== 'OK') return;
+  for (const n of list) await moveNote(n, '');
+  if (backend){
+    await flushWrites();
+    const x = await call(() => backend.trashDir(nb));
+    if (x.error) status('Impossibile spostare la cartella nel cestino: ' + x.error);
+    backendDirs = backendDirs.filter(d => d !== nb);
+  } else { db.settings.notebooks = (db.settings.notebooks || []).filter(x => x !== nb); }
+  if (db.settings.lastNb === nb) db.settings.lastNb = '';
+  saveSettings(); updateChrome(); status(`Quaderno "${nb}" eliminato.`);
+}
+
+/* ================= formattazione ================= */
+function needSel(){
+  const s = selInEditor();
+  if (!s || s.isCollapsed){ status('Seleziona prima il testo.'); return false; }
+  return true;
+}
+function highlight(i){
+  if (!needSel()) return;
+  document.execCommand('styleWithCSS', false, true);
+  document.execCommand('hiliteColor', false, HL[i].color);
+  document.execCommand('styleWithCSS', false, false);
+  onEdit();
+}
+function clearHighlight(){
+  if (!needSel()) return;
+  document.execCommand('styleWithCSS', false, true);
+  document.execCommand('hiliteColor', false, 'transparent');
+  document.execCommand('styleWithCSS', false, false);
+  onEdit();
+}
+function underline(){
+  if (!needSel()) return;
+  document.execCommand('styleWithCSS', false, false);
+  document.execCommand('underline');
+  onEdit();
+}
+function clearFormat(){
+  if (!needSel()) return;
+  document.execCommand('removeFormat');
+  document.execCommand('styleWithCSS', false, true);
+  document.execCommand('hiliteColor', false, 'transparent');
+  document.execCommand('styleWithCSS', false, false);
+  onEdit();
+}
+editor.addEventListener('paste', e => {
+  e.preventDefault();
+  const files = [...((e.clipboardData && e.clipboardData.files) || [])];
+  if (files.some(f => IMG_TYPES.test(f.type))){ insertImages(files); return; }
+  const t = (e.clipboardData || window.clipboardData).getData('text/plain');
+  if (t) document.execCommand('insertText', false, t.replace(/\r\n?/g, '\n'));
+});
+editor.addEventListener('drop', e => {
+  const t = e.dataTransfer && e.dataTransfer.getData('text/plain');
+  const files = [...((e.dataTransfer && e.dataTransfer.files) || [])];
+  e.preventDefault();
+  const r = document.caretRangeFromPoint ? document.caretRangeFromPoint(e.clientX, e.clientY) : null;
+  if (r){ const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+  if (files.some(f => IMG_TYPES.test(f.type))){ insertImages(files); return; }
+  if (!t) return;
+  document.execCommand('insertText', false, t);
+});
+editor.addEventListener('input', onEdit);
+editor.addEventListener('blur', () => { if (cur) commit(); });
+editor.addEventListener('keydown', e => {
+  if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.altKey){ e.preventDefault(); document.execCommand('insertText', false, '    '); }
+});
+page.addEventListener('mousedown', e => {
+  if (e.target !== page) return;
+  e.preventDefault(); editor.focus();
+  const r = document.createRange(); r.selectNodeContents(editor); r.collapse(false);
+  const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+});
+
+/* ================= note: nuova, elimina, cronologia ================= */
+function newNote(nb){
+  flushEdit();
+  const n = createNote(uniqueTitle('Nuova nota'), undefined, typeof nb === 'string' ? nb : activeNb());
+  persist(); openNote(n.id, {selTitle:true});
+  status('Nuova nota: scrivi il titolo sulla prima riga.');
+}
+function deleteNote(id){
+  const n = byId(id); if (!n) return;
+  db.notes = db.notes.filter(x => x !== n);
+  hist = hist.filter(x => x !== id);
+  if (backend && n.file && n.mtime != null){
+    const b = backend, f = n.file;
+    call(() => b.trash(f)).then(r => { if (r.error) status('Impossibile spostare il file nel cestino: ' + r.error); });
+  }
+  if (cur === n){
+    cur = null; hpos = hist.length - 1;
+    let next = hist[hpos] && byId(hist[hpos]);
+    if (!next) next = [...db.notes].sort((a, b) => b.modified - a.modified)[0];
+    if (!next) next = createNote('Nuova nota');
+    persist();
+    openNote(next.id, {push: !hist.includes(next.id)});
+  } else {
+    hpos = cur ? hist.lastIndexOf(cur.id) : hist.length - 1;
+    persist(); markBroken(); updateChrome();
+  }
+}
+async function askDeleteCurrent(){
+  if (!cur) return;
+  const r = await msgBox('Elimina nota', `${backend ? `Spostare la nota "${cur.title}" nella sottocartella _cestino?` : `Eliminare definitivamente la nota "${cur.title}"?`}\nI collegamenti che la richiamano resteranno, in rosso.`, {icon:'w', buttons:['Sì','No'], def:1});
+  if (r === 'Sì'){ const t = cur.title; deleteNote(cur.id); status(`Nota "${t}" eliminata.`); }
+}
+function goBack(){ if (hpos > 0){ flushEdit(); hpos--; openNote(hist[hpos], {push:false}); } }
+function goFwd(){ if (hpos < hist.length - 1){ flushEdit(); hpos++; openNote(hist[hpos], {push:false}); } }
+const recent = () => [...db.notes].sort((a, b) => b.modified - a.modified).slice(0, 6);
+
+/* ================= finestre di dialogo ================= */
+let modalCount = 0, zTop = 3000;
+function dialog({title, width = 380, modal = true, build, buttons = [], onClose}){
+  const ov = modal ? h('div', {class:'dlg-ov'}) : null;
+  const body = h('div', {class:'dbody'}), btns = h('div', {class:'dbtns'});
+  const sys = h('div', {class:'dsys', title:'Chiudi'}, h('i'));
+  const tb = h('div', {class:'dt'}, sys, h('div', {class:'dtt'}, title));
+  const win = h('div', {class:'dlg', role:'dialog', style:`width:${width}px`}, h('div', {class:'dinner'}, tb, body, btns));
+  let closed = false, defBtn = null;
+  const api = {win, body, close(res){
+    if (closed) return; closed = true;
+    win.remove(); if (ov) ov.remove(); if (modal) modalCount--;
+    if (onClose) onClose(res);
+    if (!document.querySelector('.dlg')) editor.focus({preventScroll:true});
+  }};
+  if (build) build(body, api);
+  buttons.forEach(b => {
+    const el = h('button', {class:'btn' + (b.def ? ' def' : ''), type:'button'}, b.label);
+    el.addEventListener('click', () => { const r = b.act ? b.act(api) : undefined; if (r !== false) api.close(b.value != null ? b.value : b.label); });
+    if (b.def) defBtn = el;
+    btns.append(el);
+  });
+  win.addEventListener('keydown', e => {
+    if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); api.close(null); }
+    else if (e.key === 'Enter' && defBtn && e.target.tagName !== 'BUTTON' && !e.target.closest('.listbox')){ e.preventDefault(); e.stopPropagation(); defBtn.click(); }
+  });
+  sys.addEventListener('click', () => api.close(null));
+  if (ov){ ov.style.zIndex = ++zTop; document.body.append(ov); modalCount++; }
+  win.style.zIndex = ++zTop;
+  document.body.append(win);
+  win.style.left = Math.max(5, (innerWidth - win.offsetWidth) / 2) + 'px';
+  win.style.top = Math.max(30, (innerHeight - win.offsetHeight) / 3) + 'px';
+  tb.addEventListener('mousedown', e => {
+    if (e.target.closest('.dsys')) return;
+    e.preventDefault();
+    const sx = e.clientX - win.offsetLeft, sy = e.clientY - win.offsetTop;
+    const mv = ev => { win.style.left = (ev.clientX - sx) + 'px'; win.style.top = Math.max(0, ev.clientY - sy) + 'px'; };
+    const up = () => { removeEventListener('mousemove', mv); removeEventListener('mouseup', up); };
+    addEventListener('mousemove', mv); addEventListener('mouseup', up);
+  });
+  const first = win.querySelector('input,.listbox') || defBtn || btns.querySelector('button');
+  if (first) setTimeout(() => first.focus(), 0);
+  return api;
+}
+function msgBox(title, text, {icon = 'i', buttons = ['OK'], def = 0} = {}){
+  const glyph = {i:'i', q:'?', w:'!', x:'STOP'}[icon] || 'i';
+  return new Promise(res => dialog({title, width:380,
+    build: b => { b.classList.add('msg'); b.append(h('div', {class:'ico ico-' + icon}, glyph), h('div', {class:'mtext'}, text)); },
+    buttons: buttons.map((l, i) => ({label:l, value:l, def:i === def})),
+    onClose: r => res(r)}));
+}
+function listbox(onOpen, onSelect){
+  const el = h('div', {class:'listbox', tabindex:'0'}); let rows = [], sel = -1;
+  function select(i){
+    const changed = sel !== i || !rows[i];
+    sel = i;
+    if (onSelect && changed && rows[i]) setTimeout(() => { if (rows[sel]) onSelect(rows[sel]); }, 0);
+    [...el.children].forEach((r, j) => r.classList.toggle('sel', j === i));
+    if (el.children[i]) el.children[i].scrollIntoView({block:'nearest'});
+  }
+  function render(items){
+    rows = items; el.innerHTML = '';
+    items.forEach((it, i) => {
+      const r = h('div', {class:'row'}, h('span', {class:'c1'}, it.title), it.mid != null ? h('span', {class:'cm'}, it.mid) : null, h('span', {class:'c2'}, it.sub || ''));
+      r.addEventListener('mousedown', () => select(i));
+      r.addEventListener('dblclick', () => onOpen(it));
+      el.append(r);
+    });
+    select(items.length ? 0 : -1);
+  }
+  el.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown'){ e.preventDefault(); select(Math.min(rows.length - 1, sel + 1)); }
+    else if (e.key === 'ArrowUp'){ e.preventDefault(); select(Math.max(0, sel - 1)); }
+    else if (e.key === 'Enter' && rows[sel]){ e.preventDefault(); e.stopPropagation(); onOpen(rows[sel]); }
+  });
+  return {el, render, select, get selected(){ return rows[sel]; }, get index(){ return sel; }, get length(){ return rows.length; }};
+}
+
+/* ---------- Libreria: quaderni a sinistra, note a destra ---------- */
+function showLibrary(nbFilter){
+  flushEdit();
+  let lb, q, nbl, sel = typeof nbFilter === 'string' ? nbFilter : '*';
+  dialog({title:'Libreria', width:780,
+    build: (b, api) => {
+      q = h('input', {class:'w31', type:'text', placeholder:'parole contenute nel titolo o nel testo'});
+      lb = listbox(it => { api.close(); openNote(it.id); });
+      nbl = listbox(() => lb.el.focus(), it => { if (sel !== it.id){ sel = it.id; api.refresh(true); } });
+      const cnt = h('div', {class:'cnt'});
+      b.append(h('label', {class:'lbl'}, 'Cerca:', q),
+        h('div', {class:'libwrap'},
+          h('div', {class:'left'}, h('div', {class:'lhead'}, h('span', {class:'c1'}, 'Quaderni')), nbl.el),
+          h('div', {class:'right'},
+            h('div', {class:'lhead'}, h('span', {class:'c1'}, 'Titolo'), h('span', {class:'cm'}, 'Quaderno'), h('span', {class:'c2'}, 'Modificata')),
+            lb.el, cnt)));
+      const renderNb = () => {
+        const list = ['*', ...notebooks()];
+        nbl.render(list.map(nb => ({id:nb, title: nb === '*' ? 'Tutti i quaderni' : nbName(nb), sub: String(nb === '*' ? db.notes.length : nbCount(nb))})));
+        nbl.select(Math.max(0, list.indexOf(sel)));
+      };
+      api.refresh = onlyNotes => {
+        if (!onlyNotes) renderNb();
+        const words = norm(q.value).split(' ').filter(Boolean);
+        const items = [...db.notes].sort((x, y) => y.modified - x.modified)
+          .filter(n => sel === '*' || (n.nb || '') === sel)
+          .filter(n => !words.length || words.every(w => norm(n.title + ' ' + plain(n)).includes(w)))
+          .map(n => ({id:n.id, title:n.title, mid:nbName(n.nb), sub:fmtDate(n.modified)}));
+        lb.render(items);
+        cnt.textContent = `${items.length} note` + (sel === '*' ? ` in ${notebooks().length} quaderni` : ` nel quaderno ${nbName(sel)}`);
+      };
+      q.addEventListener('input', () => api.refresh(true));
+      q.addEventListener('keydown', e => {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+          e.preventDefault();
+          lb.select(Math.max(0, Math.min(lb.length - 1, lb.index + (e.key === 'ArrowDown' ? 1 : -1))));
+        }
+      });
+      api.refresh();
+    },
+    buttons: [
+      {label:'Apri', def:true, act: () => { const it = lb.selected; if (!it) return false; openNote(it.id); }},
+      {label:'Nuova nota', act: () => { newNote(sel === '*' ? activeNb() : sel); }},
+      {label:'Nuovo quaderno...', act: api => { newNotebook().then(nb => { if (nb != null){ sel = nb; api.refresh(); } }); return false; }},
+      {label:'Elimina nota', act: api => {
+        const it = lb.selected; if (!it) return false;
+        msgBox('Elimina nota', backend ? `Spostare "${it.title}" nella sottocartella _cestino?` : `Eliminare definitivamente "${it.title}"?`, {icon:'w', buttons:['Sì','No'], def:1})
+          .then(r => { if (r === 'Sì'){ deleteNote(it.id); api.refresh(); } });
+        return false;
+      }},
+      {label:'Chiudi'}
+    ]});
+}
+function chooser(title, notes, emptyText){
+  let lb;
+  dialog({title, width:460,
+    build: (b, api) => {
+      lb = listbox(it => { api.close(); openNote(it.id); });
+      b.append(lb.el, h('div', {class:'cnt'}, notes.length ? `${notes.length} note` : emptyText));
+      lb.render(notes.map(n => ({id:n.id, title:n.title, mid:nbName(n.nb), sub:fmtDate(n.modified)})));
+    },
+    buttons: [{label:'Apri', def:true, act: () => { const it = lb.selected; if (!it) return false; openNote(it.id); }}, {label:'Chiudi'}]});
+}
+function showBacklinks(){
+  flushEdit();
+  const k = norm(cur.title);
+  const res = db.notes.filter(n => n !== cur && linksOf(n).some(t => norm(t) === k)).sort((a, b) => b.modified - a.modified);
+  chooser(`Cosa collega a "${cur.title}"`, res, 'Nessuna nota contiene collegamenti a questa.');
+}
+
+/* ---------- Trova ---------- */
+let findDlg = null, lastFind = {q:'', cs:false}, findPos = null;
+function clearFind(){ if (window.CSS && CSS.highlights) CSS.highlights.delete('find'); findPos = null; }
+function showFind(){
+  if (findDlg){ findDlg.q.focus(); findDlg.q.select(); return; }
+  const s = selInEditor(); const pre = s && !s.isCollapsed && s.toString().length < 80 ? s.toString().trim() : lastFind.q;
+  let q, cs;
+  const d = dialog({title:'Trova', width:400, modal:false,
+    build: b => {
+      q = h('input', {class:'w31', type:'text', value:pre});
+      cs = h('input', {type:'checkbox'}); cs.checked = lastFind.cs;
+      b.append(h('label', {class:'lbl'}, 'Trova:', q), h('label', {class:'chk'}, cs, 'Distingui maiuscole/minuscole'));
+    },
+    buttons: [{label:'Trova successivo', def:true, act: () => { lastFind = {q:q.value, cs:cs.checked}; findNext(true); return false; }}, {label:'Annulla'}],
+    onClose: () => {
+      findDlg = null;
+      if (findPos){ const r = findPos.range; const s = getSelection(); editor.focus({preventScroll:true}); s.removeAllRanges(); s.addRange(r); }
+      if (window.CSS && CSS.highlights) CSS.highlights.delete('find');
+    }});
+  findDlg = {d, q};
+}
+function findNext(fromDialog){
+  const q = lastFind.q; if (!q) return showFind();
+  const nodes = textNodes(editor); let full = ''; const map = [];
+  for (const n of nodes){ map.push([n, full.length]); full += n.data; }
+  const hay = lastFind.cs ? full : full.toLocaleLowerCase('it');
+  const needle = lastFind.cs ? q : q.toLocaleLowerCase('it');
+  let start = 0;
+  if (findPos && findPos.noteId === cur.id) start = findPos.end;
+  else { const s = selInEditor(); if (s){ const r = s.getRangeAt(0); start = offsetOf(r.endContainer, r.endOffset); } }
+  let i = hay.indexOf(needle, start); if (i < 0) i = hay.indexOf(needle, 0);
+  if (i < 0){ clearFind(); msgBox('Trova', `Impossibile trovare "${q}".`, {icon:'i'}); return; }
+  const at = off => { for (let k = map.length - 1; k >= 0; k--) if (off >= map[k][1]) return [map[k][0], off - map[k][1]]; return [map[0][0], 0]; };
+  const [sn, so] = at(i), [en, eo] = at(i + q.length);
+  const r = document.createRange();
+  r.setStart(sn, Math.min(so, sn.data.length)); r.setEnd(en, Math.min(eo, en.data.length));
+  findPos = {noteId:cur.id, end:i + q.length, range:r};
+  const rect = r.getBoundingClientRect(), sr = sheet.getBoundingClientRect();
+  if (rect.top < sr.top + 20 || rect.bottom > sr.bottom - 20) sheet.scrollTop += rect.top - sr.top - sr.height / 3;
+  if (fromDialog && findDlg && window.CSS && CSS.highlights && window.Highlight){
+    CSS.highlights.set('find', new Highlight(r));
+  } else {
+    editor.focus({preventScroll:true});
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+  }
+}
+
+/* ---------- Esporta / importa / stampa ---------- */
+function download(name, text, type){
+  const url = URL.createObjectURL(new Blob([text], {type:type + ';charset=utf-8'}));
+  const a = h('a', {href:url, download:name}); document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+function exportTxt(){ flushEdit(); download(safeName(cur.title) + '.txt', editor.innerText.replace(/\n/g, '\r\n'), 'text/plain'); }
+/* pagina HTML autonoma con il foglio scelto (quadretti, margine, immagini incorporate) */
+async function printableHtml(autoPrint, opt = {paper:true, foot:true}){
+  flushEdit();
+  const k = PAPERS[db.settings.paper] ? db.settings.paper : 'q5', p = PAPERS[k], pitch = PITCH[k];
+  const c = editor.cloneNode(true);
+  const live = [...editor.querySelectorAll('img')], copies = [...c.querySelectorAll('img')];
+  for (let i = 0; i < copies.length; i++){
+    const im = copies[i]; im.classList.remove('sel'); im.removeAttribute('data-src');
+    const src = live[i] && live[i].src;
+    if (!src) continue;
+    try {
+      const blob = await (await fetch(src)).blob();
+      im.src = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(blob); });
+    } catch(e){ im.src = src; }
+  }
+  c.querySelectorAll('a.nl').forEach(a => a.classList.remove('broken'));
+  const ink = 'rgba(70,125,190,.40)', grid = 'rgba(120,120,120,.22)', dot = 'rgba(110,110,110,.55)';
+  const bg = {
+    grid: `background-image:linear-gradient(to bottom,${grid} 1px,transparent 1px),linear-gradient(to right,${grid} 1px,transparent 1px);background-size:${pitch}mm ${pitch}mm;`,
+    dots: `background-image:radial-gradient(circle at 1px 1px,${dot} 0.6px,transparent 1.1px);background-size:${pitch}mm ${pitch}mm;`,
+    rule: `background-image:linear-gradient(to bottom,transparent calc(${p.lh}mm - 1px),${ink} calc(${p.lh}mm - 1px));background-size:100% ${p.lh}mm;background-position:0 ${10 - p.lh / 2 + 0.4 * p.fs}mm;`,
+    '': ''}[opt.paper ? p.cls : ''];
+  const margin = opt.paper && db.settings.margin;
+  return `<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><title>${esc(cur.title)}</title><style>
+@page{size:A4;margin:0}
+html,body{margin:0;background:#a8a8a8}
+.page{position:relative;box-sizing:border-box;width:210mm;min-height:297mm;margin:0 auto;padding:10mm 12mm 10mm ${margin ? 23 : 10}mm;background-color:#fffef6;${bg}-webkit-print-color-adjust:exact;print-color-adjust:exact}
+${margin ? '.page::before{content:"";position:absolute;top:0;bottom:0;left:20mm;border-left:1.5px solid #e2504c}' : ''}
+.ed{font-family:Consolas,"Lucida Console",Menlo,"DejaVu Sans Mono",monospace;font-size:${p.fs}mm;line-height:${p.lh}mm;white-space:pre-wrap;overflow-wrap:anywhere;color:#1b1b3a}
+.ed::first-line{font-weight:bold;color:#000080}
+.ed div{min-height:${p.lh}mm}
+.ed a{color:#0000c8;text-decoration:underline}
+.ed img{display:inline-block;vertical-align:bottom;max-width:100%;height:auto}
+.foot{position:absolute;right:12mm;bottom:5mm;font:2.8mm/1 Consolas,"Lucida Console",Menlo,monospace;color:#8a8a8a}
+@media print{html,body{background:${opt.paper ? '#fffef6' : '#fff'}}.page{margin:0}.foot{position:fixed;bottom:6mm}}
+</style></head><body><div class="page"${opt.paper ? '' : ' style="background:#fff"'}><div class="ed">${c.innerHTML}</div>${opt.foot ? `<div class="foot">${esc(footText(cur))}</div>` : ''}</div>${autoPrint ? '<script>addEventListener("load",()=>setTimeout(()=>print(),300))<\/script>' : ''}</body></html>`;
+}
+async function exportHtml(){ const html = await printableHtml(false); download(safeName(cur.title) + '.html', html, 'text/html'); }
+function exportMd(){ flushEdit(); download(safeFile(cur.title) + '.md', serializeNote(cur), 'text/markdown'); }
+function exportDB(){
+  flushEdit();
+  const d = new Date().toISOString().slice(0, 10);
+  download(`quaderno-backup-${d}.json`, JSON.stringify({version:2, notes:db.notes.map(exportable)}, null, 1), 'application/json');
+  status('Copia della libreria salvata.');
+}
+/* aggiunge note alla libreria (import): titoli doppi vengono saltati */
+function addImported(list){
+  let added = 0, skipped = 0;
+  for (const s of list){
+    const ex = s.id && byId(s.id);
+    if (ex){ if (s.modified > ex.modified){ Object.assign(ex, {title:s.title, html:s.html, modified:s.modified, _w:true}); added++; } else skipped++; continue; }
+    if (findByTitle(s.title)){ skipped++; continue; }
+    const n = {id: s.id || uid(), title:s.title, nb: s.nb != null ? safeNb(s.nb) : activeNb(), html:s.html, created:s.created || now(), modified:s.modified || now(), _w:true};
+    n.num = nextNum(n.nb, n);
+    if (backend) n.file = fileNameFor(n);
+    db.notes.push(n); added++;
+  }
+  persist(); markBroken(); updateChrome();
+  return {added, skipped};
+}
+function pickFiles(accept, multiple, cb){
+  const inp = h('input', {type:'file', accept, multiple});
+  inp.addEventListener('change', () => cb([...inp.files]));
+  inp.click();
+}
+function importDB(){
+  pickFiles('.json,application/json', false, async ([f]) => {
+    if (!f) return;
+    let d;
+    try { d = JSON.parse(await f.text()); } catch(e){ return msgBox('Importa libreria', 'Il file non è un backup valido di Quaderno.', {icon:'x'}); }
+    const notes = Array.isArray(d) ? d : d && d.notes;
+    if (!Array.isArray(notes)) return msgBox('Importa libreria', 'Il file non contiene note.', {icon:'x'});
+    const clean = notes.filter(n => n && typeof n.html === 'string').map(n => ({
+      id: typeof n.id === 'string' ? n.id : uid(), title: String(n.title || 'Senza titolo').slice(0, 200), nb: typeof n.nb === 'string' ? n.nb : '',
+      html: sanitize(n.html), created: +n.created || now(), modified: +n.modified || now()}));
+    flushEdit();
+    const r = addImported(clean);
+    msgBox('Importa libreria', `Note importate o aggiornate: ${r.added}\nGià presenti (saltate): ${r.skipped}`, {icon:'i'});
+  });
+}
+function importMd(){
+  pickFiles('.md,.markdown,.txt,text/markdown,text/plain', true, async files => {
+    const list = [];
+    for (const f of files){ const p = mdToNote(await f.text(), f.name.replace(/\.(markdown|txt)$/i, '.md')); list.push({id:p.id, title:p.title, html:p.html, created:p.created || f.lastModified, modified:p.modified || f.lastModified}); }
+    if (!list.length) return;
+    flushEdit();
+    const r = addImported(list);
+    msgBox('Importa note Markdown', `Note importate: ${r.added}\nGià presenti (saltate): ${r.skipped}`, {icon:'i'});
+  });
+}
+/* ---------- note di Tomboy / Gnote (.note, XML) ---------- */
+function tomboyToNote(xml){
+  const doc = new DOMParser().parseFromString(xml, 'application/xml');
+  if (doc.querySelector('parsererror')) return null;
+  const content = doc.getElementsByTagName('note-content')[0]; if (!content) return null;
+  const lines = [[]];
+  const push = s => lines[lines.length - 1].push(s);
+  (function walk(node, hl){
+    for (const c of node.childNodes){
+      if (c.nodeType === 3){
+        c.data.split('\n').forEach((part, i) => { if (i) lines.push([]); if (part) push(hl ? `<span style="background-color: ${HL[1].color};">${esc(part)}</span>` : esc(part)); });
+      } else if (c.nodeType === 1){
+        const ln = c.localName;
+        if ((ln === 'internal' || ln === 'broken') && c.prefix === 'link') push('<a class="nl">' + esc(c.textContent.replace(/\s+/g, ' ').trim()) + '</a>');
+        else walk(c, hl || ln === 'highlight');
+      }
+    }
+  })(content, false);
+  const tEl = doc.getElementsByTagName('title')[0];
+  const html = lines.map(l => `<div>${l.join('') || '<br>'}</div>`).join('');
+  const title = (tEl && tEl.textContent.trim()) || textOf(lines[0].join('')).trim() || 'Nota Tomboy';
+  const dt = tag => { const e = doc.getElementsByTagName(tag)[0]; const t = e ? Date.parse(e.textContent) : NaN; return isNaN(t) ? null : t; };
+  const tag = [...doc.getElementsByTagName('tag')].map(t => t.textContent).find(t => t.startsWith('system:notebook:'));
+  return {title, html: sanitize(html), created: dt('create-date'), modified: dt('last-change-date'), nb: tag ? safeNb(tag.slice(16)) : undefined};
+}
+function importTomboy(){
+  pickFiles('.note', true, async files => {
+    const list = []; let bad = 0;
+    for (const f of files){ const n = tomboyToNote(await f.text()); if (n) list.push(n); else bad++; }
+    flushEdit();
+    const r = addImported(list);
+    msgBox('Importa note Tomboy', `Note importate: ${r.added}\nGià presenti (saltate): ${r.skipped}` + (bad ? `\nFile non leggibili: ${bad}` : ''), {icon:'i'});
+  });
+}
+/* ---------- cartella di lavoro ---------- */
+async function chooseFolder(){
+  commit(); await flushWrites();
+  const prev = db.notes.map(exportable);
+  if (isEl){
+    const p = qapi.pickFolder(db.settings.folder || qapi.defaultFolder());
+    if (!p || p === db.settings.folder) return;
+    if (await useFolder(elBackend(p), {copyFrom:prev})){ db.settings.folder = p; saveSettings(); qapi.watch(p); }
+  } else {
+    if (!window.showDirectoryPicker) return msgBox('Cartella di lavoro', 'Questo browser non permette di usare una cartella del computer.\nUsa Chrome o Edge, oppure l\'app desktop.', {icon:'i'});
+    let dir; try { dir = await showDirectoryPicker({id:'quaderno', mode:'readwrite'}); } catch(e){ return; }
+    if (await useFolder(fsaBackend(dir), {copyFrom:prev})){ await idbSet('folder', dir); db.settings.storage = 'folder'; saveSettings(); }
+  }
+}
+async function useBrowserMemory(){
+  commit(); await flushWrites();
+  backend = null; db.settings.storage = 'local'; saveSettings();
+  loadLocal(); cur = null; hist = []; hpos = -1;
+  openNote([...db.notes].sort((a, b) => b.modified - a.modified)[0].id);
+  updateFolderPanel(); status('Ora le note sono salvate nella memoria del browser.');
+}
+function openFolder(){ if (backend) backend.open(); }
+function updateFolderPanel(){
+  const el = $('#st-folder'); if (!el) return;
+  el.textContent = backend ? '📁 ' + (backend.label.split(/[\\/]/).filter(Boolean).pop() || backend.label) : 'Memoria del browser';
+  el.title = backend ? 'Cartella di lavoro: ' + backend.label : 'Le note sono salvate in questo browser';
+}
+const inFrame = (() => { try { return window.self !== window.top; } catch(e){ return true; } })();
+async function printNote(){
+  if (!cur) return;
+  commit();
+  const o = Object.assign({paper:true, foot:true}, db.settings.print || {});
+  const p = PAPERS[db.settings.paper] || PAPERS.q5;
+  let rPaper, rBlank, cFoot;
+  const go = await new Promise(res => dialog({title:'Stampa', width:430,
+    build: b => {
+      rPaper = h('input', {type:'radio', name:'qprint'}); rBlank = h('input', {type:'radio', name:'qprint'});
+      rPaper.checked = o.paper; rBlank.checked = !o.paper;
+      cFoot = h('input', {type:'checkbox'}); cFoot.checked = o.foot;
+      b.append(
+        h('div', {class:'grp'}, h('div', {class:'grpt'}, 'Pagina'),
+          h('label', {class:'chk'}, rPaper, `Con il foglio: ${p.label}${db.settings.margin && p.cls !== '' ? ' e margine rosso' : ''}`),
+          h('label', {class:'chk'}, rBlank, 'Pagina bianca (solo testo e immagini)')),
+        h('label', {class:'chk'}, cFoot, `In fondo alla pagina: ${footText(cur)}`),
+        inFrame ? h('p', {class:'pnote', style:'margin-top:10px'}, 'Qui Quaderno è aperto dentro un riquadro protetto e il browser blocca la stampa: verrà scaricata una pagina stampabile che, aperta, si stampa da sola.') : '');
+    },
+    buttons: [{label: inFrame ? 'Scarica pagina stampabile' : 'Stampa', def:true, value:'go'}, {label:'Annulla', value:null}],
+    onClose: r => res(r === 'go')}));
+  if (!go) return;
+  const opt = {paper: rPaper.checked, foot: cFoot.checked};
+  db.settings.print = opt; saveSettings();
+  if (inFrame){
+    download(safeName(cur.title) + ' - stampa.html', await printableHtml(true, opt), 'text/html');
+    status('Pagina stampabile scaricata: aprila per stampare.');
+    return;
+  }
+  document.body.classList.toggle('print-blank', !opt.paper);
+  document.body.classList.toggle('print-nofoot', !opt.foot);
+  setTimeout(() => window.print(), 50);
+}
+addEventListener('afterprint', () => document.body.classList.remove('print-blank', 'print-nofoot'));
+
+/* ---------- Guida / Informazioni ---------- */
+function showHelp(){
+  const rows = [
+    [MOD + 'N', 'Nuova nota (la prima riga è il titolo)'],
+    [MOD + 'O', 'Libreria: cerca e apri tutte le note'],
+    [MOD + 'L', 'Collega la selezione: riapre la nota con quel titolo o la crea'],
+    [MOD + 'Shift+L', 'Togli il collegamento sotto il cursore'],
+    ['@', 'Menu a tendina per collegare una nota esistente (o crearne una)'],
+    ['Quaderni', 'Ogni quaderno ha le sue note; i collegamenti valgono tra tutti i quaderni. Menu Quaderni o casella "Quaderno" per spostare la nota.'],
+    ['Immagini', 'Incolla (' + MOD + 'V), trascina un file, o Modifica > Inserisci immagine. Clic sull\'immagine per le dimensioni.'],
+    ['Clic su un link', 'Apre (o crea) la nota collegata'],
+    [MOD + '1 / 2 / 3', 'Evidenziatore giallo / verde / rosa'],
+    [MOD + 'U', 'Sottolinea'],
+    [MOD + '0', 'Togli evidenziature e sottolineature'],
+    [MOD + 'F, F3', 'Trova, trova successivo'],
+    ['Alt+← / Alt+→', 'Nota precedente / successiva'],
+    [MOD + 'P', 'Stampa la nota sul foglio scelto'],
+    ['Alt+lettera', 'Apre il menu con quella lettera sottolineata']
+  ];
+  dialog({title:'Guida rapida', width:520,
+    build: b => b.append(h('div', {class:'help'}, h('table', null, rows.map(([k, v]) => h('tr', null, h('td', null, k), h('td', null, v)))),
+      h('p', null, 'Collegamento automatico: quando scrivi il titolo di una nota esistente, diventa subito un link (come in Tomboy). Se rinomini una nota, i link nelle altre note si aggiornano.'),
+      h('p', null, 'Cartella di lavoro (File > Cartella di lavoro): ogni quaderno è una sottocartella e ogni nota un file Markdown (.md) con il titolo come nome; le immagini stanno nella sottocartella "allegati" del quaderno. I collegamenti sono scritti [[così]], come in Obsidian. Le note eliminate finiscono nella sottocartella _cestino. Se un file cambia da fuori (altro PC, OneDrive, un altro programma) Quaderno lo ricarica da solo.'),
+      h('p', null, backend ? 'Archivio attuale: cartella ' + backend.label : 'Archivio attuale: memoria del browser. Fai ogni tanto File > Salva copia della libreria, oppure scegli una cartella di lavoro.'))),
+    buttons:[{label:'OK', def:true}]});
+}
+function showAbout(){
+  dialog({title:'Informazioni su Quaderno', width:400,
+    build: b => b.append(h('div', {class:'about'}, h('div', {class:'ico ico-i'}, 'i'),
+      h('div', null, h('b', null, 'Quaderno ' + APP_VER), h('br'), 'Blocco note a quadretti con collegamenti tra note', h('br'),
+        'ispirato a Tomboy, vestito da Windows 3.1.', h('br'), h('br'),
+        `${db.notes.length} note nella libreria`, h('br'), isEl ? 'Versione desktop' : 'Versione browser'))),
+    buttons:[{label:'OK', def:true}]});
+}
+
+/* ================= menu Win 3.1 ================= */
+const setPaper = k => { db.settings.paper = k; applyPaper(); saveSettings(); };
+const toggle = k => { db.settings[k] = !db.settings[k]; applyPaper(); saveSettings(); if (k === 'autolink' && db.settings.autolink){ autolink(); saveNow(); markBroken(); } };
+const noCur = () => !cur;
+const menus = [
+  {label:'&File', items: () => [
+    {label:'&Nuova nota', key:'N', act:newNote},
+    {label:'&Apri libreria...', key:'O', act:showLibrary},
+    {sep:1},
+    {label:'Cartella di la&voro...', act:chooseFolder},
+    {label:'Apri ca&rtella di lavoro', act:openFolder, disabled:() => !backend || !isEl},
+    ...(!isEl ? [{label:'Usa la &memoria del browser', act:useBrowserMemory, disabled:() => !backend}] : []),
+    {sep:1},
+    {label:'Esporta nota come &testo...', act:exportTxt, disabled:noCur},
+    {label:'Esporta nota come &HTML (con il foglio)...', act:exportHtml, disabled:noCur},
+    {label:'Esporta nota come Mar&kdown...', act:exportMd, disabled:noCur},
+    {sep:1},
+    {label:'Salva copia della &libreria (.json)...', act:exportDB},
+    {label:'&Importa libreria (.json)...', act:importDB},
+    {label:'Importa note Mark&down (.md)...', act:importMd},
+    {label:'Importa note T&omboy (.note)...', act:importTomboy},
+    {sep:1},
+    {label:'&Stampa...', key:'P', act:printNote},
+    {sep:1},
+    {label:'&Elimina nota...', act:askDeleteCurrent, disabled:noCur},
+    {sep:1},
+    {label:'Es&ci', key: isMac ? '⌘Q' : 'Alt+F4', act:() => { commit(); qapi.win('close'); }, disabled:() => !isEl}
+  ]},
+  {label:'&Modifica', items: () => [
+    {label:'&Annulla', key:'Z', act:() => { editor.focus(); document.execCommand('undo'); }},
+    {label:'&Ripeti', key:'Y', act:() => { editor.focus(); document.execCommand('redo'); }},
+    {sep:1},
+    {label:'&Taglia', key:'X', act:() => document.execCommand('cut')},
+    {label:'&Copia', key:'C', act:() => document.execCommand('copy')},
+    {label:'&Incolla', key:'V', act:async () => {
+      try { const t = await navigator.clipboard.readText(); editor.focus(); if (t) document.execCommand('insertText', false, t); }
+      catch(e){ status('Usa ' + MOD + 'V per incollare.'); } }},
+    {sep:1},
+    {label:'&Seleziona tutto', key:'A', act:() => { editor.focus(); document.execCommand('selectAll'); }},
+    {label:'Inserisci &immagine...', act:pickImage, disabled:noCur},
+    {sep:1},
+    {label:'Tro&va...', key:'F', act:showFind},
+    {label:'Trova s&uccessivo', key:'F3', act:() => findNext(false)}
+  ]},
+  {label:'F&ormato', items: () => [
+    {label:'Evidenziatore &giallo', key:'1', act:() => highlight(1)},
+    {label:'Evidenziatore &verde', key:'2', act:() => highlight(2)},
+    {label:'Evidenziatore &rosa', key:'3', act:() => highlight(3)},
+    {label:'&Sottolineato', key:'U', act:underline},
+    {sep:1},
+    {label:'&Togli evidenziatura', act:clearHighlight},
+    {label:'Rimuovi &formattazione', key:'0', act:clearFormat}
+  ]},
+  {label:'&Note', items: () => [
+    {label:'&Collega selezione a nota', key:'L', act:createLink},
+    {label:'&Togli collegamento', key:'Shift+L', act:unlink},
+    {sep:1},
+    {label:'&Indietro', key:'Alt+←', act:goBack, disabled:() => hpos <= 0},
+    {label:'&Avanti', key:'Alt+→', act:goFwd, disabled:() => hpos >= hist.length - 1},
+    {sep:1},
+    {label:'Cosa c&ollega qui...', act:showBacklinks, disabled:noCur},
+    {label:'Collegamento a&utomatico', act:() => toggle('autolink'), check:() => db.settings.autolink},
+    {sep:1},
+    ...recent().map((n, i) => ({label:`&${i + 1} ${n.title}`, act:() => { flushEdit(); openNote(n.id); }, check:() => cur === n}))
+  ]},
+  {label:'&Quaderni', items: () => [
+    {label:'&Nuovo quaderno...', act:newNotebook},
+    {label:'&Sposta nota in un altro quaderno...', act:moveCurrent, disabled:noCur},
+    {label:'&Rinomina quaderno...', act:() => renameNotebook(activeNb()), disabled:() => !activeNb()},
+    {label:'&Elimina quaderno...', act:() => deleteNotebook(activeNb()), disabled:() => !activeNb()},
+    {sep:1},
+    {label:'&Tutti i quaderni...', act:() => showLibrary('*')},
+    ...notebooks().map((nb, i) => ({label:(i < 9 ? '&' + (i + 1) + ' ' : '   ') + nbName(nb) + `  (${nbCount(nb)})`, act:() => showLibrary(nb), check:() => activeNb() === nb}))
+  ]},
+  {label:'Fogl&io', items: () => [
+    ...Object.entries(PAPERS).map(([k, p], i) => ({label: '&' + (i + 1) + ' ' + p.label, act:() => setPaper(k), check:() => db.settings.paper === k})),
+    {sep:1},
+    {label:'&Margine rosso', act:() => toggle('margin'), check:() => db.settings.margin}
+  ]},
+  {label:'&?', items: () => [
+    {label:'&Guida rapida', key:'F1', act:showHelp},
+    {sep:1},
+    {label:'&Informazioni su Quaderno...', act:showAbout}
+  ]}
+];
+const sysItems = () => [
+  {label:'&Ripristina', act:() => isEl && qapi.win('max'), disabled:() => !isEl},
+  {label:'Riduci a &icona', act:() => isEl && qapi.win('min'), disabled:() => !isEl},
+  {label:'I&ngrandisci', act:toggleMax},
+  {sep:1},
+  {label:'&Chiudi', key: isMac ? '⌘Q' : 'Alt+F4', act:() => { commit(); qapi.win('close'); }, disabled:() => !isEl}
+];
+function accHTML(label){
+  const i = label.indexOf('&');
+  if (i < 0 || i === label.length - 1) return esc(label);
+  return esc(label.slice(0, i)) + '<u class="acc">' + esc(label[i + 1]) + '</u>' + esc(label.slice(i + 2));
+}
+const accChar = l => { const i = l.indexOf('&'); return i >= 0 ? (l[i + 1] || '').toLowerCase() : ''; };
+const keyLabel = k => (k.startsWith('Alt') || /^F\d+$/.test(k) || k.startsWith('⌘')) ? k : MOD + k;
+
+let dd = null; const mbEls = [];
+function buildMenubar(){
+  menus.forEach((m, i) => {
+    const b = h('div', {class:'mb', html:accHTML(m.label)});
+    b.addEventListener('mousedown', e => { e.preventDefault(); if (dd && dd.owner === i) closeMenu(); else openMenu(i); });
+    b.addEventListener('mouseenter', () => { if (dd && dd.owner >= 0 && dd.owner !== i) openMenu(i); });
+    menubar.append(b); mbEls.push(b);
+  });
+}
+function openMenu(i){
+  closeMenu();
+  mbEls[i].classList.add('open');
+  const r = mbEls[i].getBoundingClientRect();
+  showDropdown(menus[i].items(), r.left, r.bottom, i);
+}
+function openSysMenu(){
+  closeMenu();
+  $('#sysbox').classList.add('open');
+  const r = $('#sysbox').getBoundingClientRect();
+  showDropdown(sysItems(), r.left, r.bottom, -1);
+}
+function showDropdown(items, x, y, owner){
+  const el = h('div', {class:'menu'}); const rows = [];
+  items.forEach((it, idx) => {
+    if (it.sep){ el.append(h('div', {class:'msep'})); rows.push(null); return; }
+    const dis = it.disabled && it.disabled(), chk = it.check && it.check();
+    const row = h('div', {class:'mi' + (dis ? ' dis' : '') + (chk ? ' chk' : ''),
+      html:`<span>${accHTML(it.label)}</span>` + (it.key ? `<span class="k">${esc(keyLabel(it.key))}</span>` : '')});
+    row.addEventListener('mouseenter', () => setHot(idx));
+    row.addEventListener('mouseup', () => activate(idx));
+    el.append(row); rows.push(row);
+  });
+  el.addEventListener('mousedown', e => e.preventDefault());
+  document.body.append(el);
+  el.style.left = Math.max(0, Math.min(x, innerWidth - el.offsetWidth - 4)) + 'px';
+  el.style.top = Math.max(0, Math.min(y, innerHeight - el.offsetHeight - 4)) + 'px';
+  dd = {el, items, rows, hot:-1, owner};
+}
+function setHot(i){ if (!dd) return; dd.hot = i; dd.rows.forEach((r, j) => r && r.classList.toggle('hot', j === i)); }
+function activate(i){
+  if (!dd) return;
+  const it = dd.items[i];
+  if (!it || it.sep || (it.disabled && it.disabled())) return;
+  closeMenu(); it.act();
+}
+function closeMenu(){
+  if (dd){ dd.el.remove(); dd = null; }
+  mbEls.forEach(b => b.classList.remove('open'));
+  $('#sysbox').classList.remove('open');
+}
+function menuKey(e){
+  e.preventDefault(); e.stopPropagation();
+  const n = dd.items.length;
+  const move = d => { let i = dd.hot; for (let k = 0; k < n; k++){ i = (i + d + n) % n; const it = dd.items[i]; if (!it.sep && !(it.disabled && it.disabled())){ setHot(i); return; } } };
+  if (e.key === 'ArrowDown') move(1);
+  else if (e.key === 'ArrowUp') move(-1);
+  else if (e.key === 'Enter'){ if (dd.hot >= 0) activate(dd.hot); }
+  else if (e.key === 'Escape' || e.key === 'Alt') closeMenu();
+  else if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && dd.owner >= 0){
+    openMenu((dd.owner + (e.key === 'ArrowRight' ? 1 : -1) + menus.length) % menus.length); move(1);
+  } else if (e.key.length === 1){
+    const ch = e.key.toLowerCase();
+    const i = dd.items.findIndex(it => !it.sep && accChar(it.label) === ch && !(it.disabled && it.disabled()));
+    if (i >= 0) activate(i);
+  }
+}
+document.addEventListener('mousedown', e => {
+  if (dd && !dd.el.contains(e.target) && !menubar.contains(e.target) && !$('#sysbox').contains(e.target)) closeMenu();
+}, true);
+addEventListener('blur', closeMenu);
+addEventListener('resize', closeMenu);
+
+/* ================= barra strumenti ================= */
+let tbBack, tbFwd, paperSel, marginChk, nbSel;
+function tbtn(label, title, fn){
+  const b = h('button', {class:'btn', type:'button', title}, label);
+  b.addEventListener('mousedown', e => e.preventDefault());
+  b.addEventListener('click', fn);
+  return b;
+}
+function buildToolbar(){
+  const t = $('#toolbar');
+  tbBack = tbtn('◄', 'Nota precedente (Alt+←)', goBack);
+  tbFwd = tbtn('►', 'Nota successiva (Alt+→)', goFwd);
+  const sw = i => { const b = tbtn(h('span', {class:'sw', style:`background:${HL[i].color}`}), `Evidenziatore ${HL[i].name} (${MOD}${i})`, () => highlight(i)); return b; };
+  paperSel = h('select', {class:'w31', title:'Tipo di foglio'}, Object.entries(PAPERS).map(([k, p]) => h('option', {value:k}, p.label)));
+  paperSel.addEventListener('change', () => setPaper(paperSel.value));
+  nbSel = h('select', {class:'w31', title:'Quaderno della nota: cambiandolo la sposti in un altro quaderno', style:'max-width:150px'});
+  nbSel.addEventListener('change', async () => {
+    const v = nbSel.value; nbSel.blur();
+    if (v === '\u0000new'){ const nb = await newNotebook(); if (nb != null) await moveNote(cur, nb); else updateChrome(); }
+    else await moveNote(cur, v);
+    editor.focus({preventScroll:true});
+  });
+  marginChk = h('input', {type:'checkbox'});
+  marginChk.addEventListener('change', () => toggle('margin'));
+  t.append(tbBack, tbFwd, h('span', {class:'tsep'}),
+    tbtn('Libreria', `Tutte le note (${MOD}O)`, showLibrary), tbtn('Nuova', `Nuova nota (${MOD}N)`, newNote), h('span', {class:'tsep'}),
+    sw(1), sw(2), sw(3), tbtn(h('span', {class:'u'}, 'S'), `Sottolinea (${MOD}U)`, underline),
+    tbtn('×', `Togli formattazione (${MOD}0)`, clearFormat), h('span', {class:'tsep'}),
+    tbtn('Collega', `Collega la selezione a una nota (${MOD}L)`, createLink), tbtn('Immagine', 'Inserisci un\'immagine (oppure incollala o trascinala)', pickImage), h('span', {class:'tsep'}),
+    h('span', {class:'tlab'}, 'Quaderno:'), nbSel, h('span', {class:'tsep'}),
+    h('span', {class:'tlab'}, 'Foglio:'), paperSel, h('label', {class:'tchk'}, marginChk, 'Margine'));
+}
+
+/* ================= stato e aspetto ================= */
+let stTimer;
+function status(t){
+  $('#st-msg').textContent = t;
+  clearTimeout(stTimer); stTimer = setTimeout(() => $('#st-msg').textContent = 'Pronto', 7000);
+}
+function updateStatus(){
+  $('#st-saved').textContent = dirty ? 'Modificato' : (lastSaved ? 'Salvato ' + lastSaved.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'}) : 'Salvato');
+}
+function updateChrome(){
+  const t = cur ? cur.title : '';
+  document.title = t ? `Quaderno - ${cur.nb ? cur.nb + ' - ' : ''}${t}` : 'Quaderno';
+  $('#pagefoot').textContent = footText(cur);
+  if (nbSel){
+    const list = notebooks(), v = cur ? cur.nb || '' : '';
+    const key = JSON.stringify(list);
+    if (nbSel.dataset.key !== key){
+      nbSel.innerHTML = ''; nbSel.dataset.key = key;
+      list.forEach(nb => nbSel.append(h('option', {value:nb}, nbName(nb))));
+      nbSel.append(h('option', {value:'\u0000new'}, 'Nuovo quaderno...'));
+    }
+    nbSel.value = v; nbSel.disabled = !cur;
+  }
+  $('#title').textContent = document.title;
+  if (tbBack){ tbBack.disabled = hpos <= 0; tbFwd.disabled = hpos >= hist.length - 1; }
+  const words = ((editor.innerText || '').match(/[\p{L}\p{N}]+/gu) || []).length;
+  $('#st-words').textContent = `${words} parole`;
+  $('#st-count').textContent = `${db.notes.length} note`;
+  updateStatus();
+}
+function applyPaper(){
+  const k = PAPERS[db.settings.paper] ? db.settings.paper : 'q5';
+  const p = PAPERS[k];
+  page.className = [p.cls, db.settings.margin ? 'margin' : ''].filter(Boolean).join(' ');
+  page.style.setProperty('--pitch', PITCH[k] + 'mm');
+  page.style.setProperty('--lh', p.lh + 'mm');
+  page.style.setProperty('--fs', p.fs + 'mm');
+  // la riga cade appena sotto la linea di base del testo
+  page.style.setProperty('--rule-y', (10 - p.lh / 2 + 0.4 * p.fs) + 'mm');
+  if (paperSel){ paperSel.value = k; marginChk.checked = !!db.settings.margin; }
+}
+function toggleMax(){
+  if (isEl) return qapi.win('max');
+  if (document.fullscreenElement) document.exitFullscreen();
+  else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
+}
+
+/* ================= tastiera globale ================= */
+document.addEventListener('keydown', e => {
+  if (dd){ menuKey(e); return; }
+  if (modalCount > 0) return;
+  if (mention && mentionKey(e)){ e.preventDefault(); e.stopPropagation(); return; }
+  const mod = isMac ? e.metaKey : e.ctrlKey;
+  if (mod && !e.altKey){
+    const map = {
+      KeyN:newNote, KeyO:showLibrary, KeyP:printNote, KeyF:showFind, KeyU:underline,
+      KeyL: e.shiftKey ? unlink : createLink,
+      Digit1:() => highlight(1), Digit2:() => highlight(2), Digit3:() => highlight(3), Digit0:clearFormat,
+      Numpad1:() => highlight(1), Numpad2:() => highlight(2), Numpad3:() => highlight(3), Numpad0:clearFormat,
+      KeyS:() => { commit(); status('Salvato.'); },
+      KeyY: isMac ? null : () => document.execCommand('redo'),
+      KeyB:() => {}, KeyI:() => {},
+      BracketLeft: isMac ? goBack : null, BracketRight: isMac ? goFwd : null
+    };
+    const fn = map[e.code];
+    if (fn){ e.preventDefault(); fn(); return; }
+  }
+  if (e.key === 'F3'){ e.preventDefault(); findNext(false); return; }
+  if (e.key === 'F1'){ e.preventDefault(); showHelp(); return; }
+  if (e.altKey && !e.ctrlKey && !e.metaKey){
+    if (e.key === 'ArrowLeft'){ e.preventDefault(); goBack(); return; }
+    if (e.key === 'ArrowRight'){ e.preventDefault(); goFwd(); return; }
+    if (e.code === 'Space'){ e.preventDefault(); openSysMenu(); return; }
+    const m = /^Key([A-Z])$/.exec(e.code);
+    if (m){
+      const i = menus.findIndex(x => accChar(x.label) === m[1].toLowerCase());
+      if (i >= 0){ e.preventDefault(); openMenu(i); setHot(dd.items.findIndex(it => !it.sep)); }
+    }
+  }
+}, true);
+
+/* ================= barra del titolo ================= */
+$('#sysbox').addEventListener('mousedown', e => { e.preventDefault(); if (dd && dd.owner === -1) closeMenu(); else openSysMenu(); });
+$('#sysbox').addEventListener('dblclick', () => { if (isEl){ commit(); qapi.win('close'); } });
+$('#btn-min').addEventListener('click', () => isEl ? qapi.win('min') : status('Riduci a icona è disponibile nell\'app desktop.'));
+$('#btn-max').addEventListener('click', toggleMax);
+$('#titlebar').addEventListener('dblclick', e => { if (e.target.id === 'title') toggleMax(); });
+
+const flushNow = () => { if (backend){ clearTimeout(flushTimer); flushTimer = null; flushWrites(); } else persistLocal(); };
+addEventListener('beforeunload', () => { commit(); flushNow(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden){ flushEdit(); flushNow(); } else rescanSoon(); });
+addEventListener('focus', rescanSoon);
+setInterval(() => { if (!document.hidden) rescan(); }, 4000);
+
+/* ================= avvio ================= */
+async function firstRunFolder(){
+  const def = qapi.defaultFolder();
+  for (;;){
+    const r = await msgBox('Benvenuto in Quaderno',
+      `Quaderno salva ogni nota come file Markdown (.md) in una cartella di lavoro, dove poi le cerca.\n\nCartella proposta:\n${def}\n\nPuoi cambiarla quando vuoi da File > Cartella di lavoro.`,
+      {icon:'i', buttons:['Usa questa', 'Scegli...']});
+    if (r === 'Scegli...'){ const p = qapi.pickFolder(def); if (p) return p; continue; }
+    const e = qapi.fs('ensure', def);
+    if (!e.error) return def;
+    await msgBox('Cartella di lavoro', 'Impossibile creare la cartella:\n' + e.error, {icon:'x'});
+  }
+}
+async function startElectron(){
+  let folder = db.settings.folder;
+  for (;;){
+    if (!folder) folder = await firstRunFolder();
+    if (!qapi.fs('exists', folder).ok){
+      const r = await msgBox('Cartella di lavoro', `La cartella\n${folder}\nnon è raggiungibile (disco di rete scollegato, OneDrive non avviato o cartella spostata).`,
+        {icon:'w', buttons:['Riprova', "Scegli un'altra", 'Esci']});
+      if (r === 'Esci') return qapi.win('close');
+      if (r === "Scegli un'altra"){ const p = qapi.pickFolder(folder); if (p) folder = p; }
+      continue;
+    }
+    if (await useFolder(elBackend(folder))) break;
+    folder = null;
+  }
+  db.settings.folder = folder; saveSettings();
+  qapi.watch(folder); qapi.onChange(rescanSoon);
+}
+async function startBrowser(){
+  if (db.settings.storage === 'folder' && window.showDirectoryPicker){
+    const dir = await idbGet('folder');
+    if (dir && dir.queryPermission){
+      let p = 'denied';
+      try { p = await dir.queryPermission({mode:'readwrite'}); } catch(e){}
+      if (p !== 'granted'){
+        const r = await msgBox('Cartella di lavoro', `Per riaprire la cartella di lavoro "${dir.name}" il browser chiede il tuo permesso.`,
+          {icon:'q', buttons:['Riconnetti', 'Usa memoria del browser']});
+        if (r === 'Riconnetti'){ try { p = await dir.requestPermission({mode:'readwrite'}); } catch(e){} }
+      }
+      if (p === 'granted' && await useFolder(fsaBackend(dir))) return;
+    }
+  }
+  backend = null; loadLocal();
+  const start = db.settings.lastId && byId(db.settings.lastId) || [...db.notes].sort((a, b) => b.modified - a.modified)[0];
+  openNote(start.id); updateFolderPanel();
+}
+loadSettings();
+try { document.execCommand('defaultParagraphSeparator', false, 'div'); } catch(e){}
+buildMenubar(); buildToolbar(); applyPaper(); updateChrome(); updateFolderPanel();
+$('#st-folder').addEventListener('dblclick', () => backend ? openFolder() : chooseFolder());
+window.__quaderno = {db: () => db, get backend(){ return backend; }, get cur(){ return cur; }, notebooks, moveNote, renameNotebook, deleteNotebook, autolink, followLink, rescan, flushWrites, serializeNote, mdToNote, useFolder, fsaBackend,
+  ready: (isEl ? startElectron() : startBrowser()).catch(e => msgBox('Errore', String(e && e.stack || e), {icon:'x'}))};
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+{
+  "name": "quaderno",
+  "version": "1.3.0",
+  "description": "Blocco note a quadretti in stile Windows 3.1 con collegamenti tra note alla Tomboy",
+  "main": "main.js",
+  "author": "Gabriele (parrel85)",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win",
+    "dist:all": "electron-builder --mac --win",
+    "dist": "electron-builder",
+    "dist:win-zip": "electron-builder --win zip -c.win.signAndEditExecutable=false"
+  },
+  "devDependencies": {
+    "electron": "^45.3.4",
+    "electron-builder": "~26.18.0"
+  },
+  "build": {
+    "appId": "it.gabriele.quaderno",
+    "productName": "Quaderno",
+    "files": [
+      "main.js",
+      "preload.js",
+      "fsops.js",
+      "app/**/*",
+      "build/icon.png"
+    ],
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "category": "public.app-category.productivity",
+      "icon": "build/icon.png",
+      "identity": "-",
+      "hardenedRuntime": false
+    },
+    "dmg": {
+      "artifactName": "${productName}-${version}-mac-${arch}.${ext}",
+      "title": "Quaderno ${version}"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "${productName}-${version}-setup.${ext}",
+      "shortcutName": "Quaderno"
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-portable.${ext}"
+    }
+  },
+  "homepage": "https://github.com/parrel85/quaderno",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/parrel85/quaderno.git"
+  },
+  "bugs": {
+    "url": "https://github.com/parrel85/quaderno/issues"
+  },
+  "keywords": [
+    "notepad",
+    "note",
+    "markdown",
+    "tomboy",
+    "windows-3.1",
+    "electron",
+    "quaderno"
+  ]
+}
