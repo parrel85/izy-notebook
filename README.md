@@ -46,7 +46,7 @@ Le note sono semplici file Markdown in una cartella tua.
 
 ## Scaricare e installare
 
-Dalla pagina [**Releases**](https://github.com/parrel85/quaderno/releases/latest):
+Dalla pagina [**Releases**](https://github.com/parrel85/izy-notebook/releases/latest):
 
 | Sistema | File |
 |---|---|
@@ -59,7 +59,7 @@ L'app non è firmata digitalmente:
 - **Windows**: se compare SmartScreen, clicca *Ulteriori informazioni* → *Esegui comunque*.
 - **Mac**: la prima volta apri l'app con clic destro → *Apri*. Se dice che è "danneggiata", da Terminale: `xattr -cr /Applications/Quaderno.app`.
 
-C'è anche la **[versione browser](https://parrel85.github.io/quaderno/)**, da usare con Chrome o Edge. Di base salva le note nel browser. Con *File → Cartella di lavoro* può usare la stessa cartella dell'app desktop.
+C'è anche la **[versione browser](https://parrel85.github.io/izy-notebook/)**, da usare con Chrome o Edge. Di base salva le note nel browser. Con *File → Cartella di lavoro* può usare la stessa cartella dell'app desktop.
 
 ## La cartella di lavoro
 
